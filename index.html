@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>今晚猜歌</title>
+<meta name="theme-color" content="#14262d">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root{
+  color-scheme: dark;
+  --night:#14262d;      /* 夜色底 */
+  --night-2:#1c3440;
+  --shell:#2a2a2e;      /* 卡帶外殼 */
+  --shell-edge:#3c3c42;
+  --label:#f0d27a;      /* 卡帶標籤黃 */
+  --stripe:#d9563a;     /* 標籤紅條 */
+  --ink:#2b2118;        /* 標籤上的筆跡 */
+  --text:#eef2ef;
+  --muted:#9fb3b0;
+  --line:#2f4a54;
+  --good:#7fcf9a;
+  --hand:"LXGW WenKai TC","Kaiti TC","BiauKai","DFKai-SB",serif;
+  --sans:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{
+  margin:0; background:var(--night); color:var(--text);
+  font:15px/1.55 var(--sans);
+  background-image:radial-gradient(120% 60% at 50% 0%, var(--night-2), var(--night) 70%);
+  padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);
+  -webkit-tap-highlight-color:transparent;
+}
+.wrap{max-width:460px; margin:0 auto; padding-inline:16px; padding-block:18px 28px; display:flex; flex-direction:column; gap:16px; min-height:100%}
+button{font:inherit; color:inherit; cursor:pointer; border:0; background:none}
+button:focus-visible,input:focus-visible{outline:2px solid var(--label); outline-offset:2px}
+
+/* 頂部：計數器 */
+.top{display:flex; align-items:center; justify-content:space-between; gap:12px}
+.brand{font:700 22px/1 var(--hand); letter-spacing:.04em; color:var(--label)}
+.brand small{display:block; font:500 11px/1.4 var(--sans); color:var(--muted); letter-spacing:.12em; margin-top:4px}
+.counter{display:flex; gap:6px; align-items:center; font:600 13px/1 var(--mono); color:var(--muted)}
+.counter b{background:#0d1a1f; color:var(--label); padding:6px 8px; border-radius:4px; letter-spacing:.12em; border:1px solid var(--line)}
+
+/* 卡帶 */
+.deck{position:relative; aspect-ratio:1.58/1; max-width:100%; border-radius:14px; overflow:hidden;
+  background:var(--shell); box-shadow:0 18px 40px -18px #000, inset 0 0 0 2px var(--shell-edge)}
+.deck{isolation:isolate}
+.deck iframe{position:absolute; inset:0; width:100%; height:100%; border:0; z-index:0}
+.deck .cover{z-index:2; transform:translateZ(0)}
+.deck .answer{z-index:3}
+.cover{position:absolute; inset:0; pointer-events:none; background:var(--shell);
+  display:flex; flex-direction:column; padding:5% 5.5% 3.5%; gap:3%; transition:opacity .6s ease}
+.deck.revealed .cover{opacity:0}
+.screw{position:absolute; width:9px; height:9px; border-radius:50%; background:#4a4a52; box-shadow:inset 0 0 0 2px #333}
+.screw.a{left:10px; top:10px}.screw.b{right:10px; top:10px}.screw.c{left:10px; bottom:10px}.screw.d{right:10px; bottom:10px}
+.label{flex:1; background:var(--label); border-radius:6px; position:relative; display:flex; flex-direction:column; overflow:hidden}
+.label .rule{height:13%; display:flex; align-items:center; justify-content:space-between; padding:0 4%;
+  color:var(--ink); font:700 clamp(12px,3.4vw,15px)/1 var(--hand)}
+.label .rule span:last-child{font:600 11px/1 var(--mono); letter-spacing:.1em; opacity:.75}
+.label .stripe{height:9%; background:var(--stripe)}
+.label .window{flex:1; margin:4% 15%; background:#1a1a1d; border-radius:999px; position:relative;
+  display:flex; align-items:center; justify-content:space-between; padding:0 7%}
+.reel{width:clamp(38px,13vw,58px); aspect-ratio:1; border-radius:50%; background:#efe9dc; position:relative;
+  box-shadow:0 0 0 4px #5b4a3a}
+.reel::before{content:""; position:absolute; inset:28%; border-radius:50%; background:#1a1a1d}
+.reel i{position:absolute; left:50%; top:50%; width:16%; height:46%; background:#1a1a1d; transform-origin:50% 0; border-radius:2px}
+.reel i:nth-child(1){transform:translateX(-50%) rotate(0deg)}
+.reel i:nth-child(2){transform:translateX(-50%) rotate(120deg)}
+.reel i:nth-child(3){transform:translateX(-50%) rotate(240deg)}
+.playing .reel{animation:spin 1.6s linear infinite}
+@keyframes spin{to{transform:rotate(-360deg)}}
+.tape{position:absolute; left:28%; right:28%; top:50%; height:34%; transform:translateY(-50%); background:#3b2a20; border-radius:4px}
+.hint{text-align:center; color:var(--muted); font:500 12px/1.2 var(--sans); letter-spacing:.06em; margin-bottom:-1%}
+.hint b{color:var(--label)}
+.tapme .hint{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.45}}
+.answer{position:absolute; left:0; right:0; bottom:0; padding:10px 14px; background:linear-gradient(transparent,#000d);
+  font:700 20px/1.25 var(--hand); color:#fff; pointer-events:none; opacity:0; transition:opacity .5s .2s}
+.answer small{display:block; font:500 13px/1.3 var(--sans); color:var(--label)}
+.deck.revealed .answer{opacity:1}
+
+/* 進度：幾秒 */
+.steps{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+.step{border:1px solid var(--line); border-radius:10px; padding:8px 6px; text-align:center; color:var(--muted)}
+.step b{display:block; font:600 18px/1.1 var(--mono); color:var(--text)}
+.step span{font-size:12px}
+.step.on{border-color:var(--label); background:#f0d27a14}
+.step.on b{color:var(--label)}
+.step.done{opacity:.45}
+
+.row{display:flex; gap:10px}
+.btn{flex:1; min-height:52px; border-radius:12px; padding:10px 14px; font-weight:700; font-size:16px;
+  background:#22404b; border:1px solid var(--line)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--label); color:var(--ink); border-color:transparent}
+.btn.ghost{background:transparent}
+.btn[disabled]{opacity:.35; cursor:default}
+.small{flex:0 0 auto; min-height:44px; font-size:14px; font-weight:500}
+
+/* 誰答對 */
+.who{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.who .btn{min-height:64px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px}
+.who .btn small{font:500 12px/1 var(--sans); color:var(--muted)}
+.who .nobody{grid-column:1/-1; min-height:46px}
+.q{font:700 17px/1.4 var(--hand); color:var(--label); text-align:center}
+
+/* 開始畫面 */
+.panel{background:#0f1f25; border:1px solid var(--line); border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:14px}
+.panel h2{margin:0; font:700 15px/1.3 var(--sans); color:var(--muted); letter-spacing:.08em}
+.packs{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+.pack{border:1px solid var(--line); border-radius:10px; padding:12px 6px; text-align:center}
+.pack b{display:block; font:700 17px/1.2 var(--hand)}
+.pack span{font:500 12px/1 var(--mono); color:var(--muted)}
+.pack[aria-pressed="true"]{border-color:var(--label); background:#f0d27a1a}
+.pack[aria-pressed="true"] b{color:var(--label)}
+.names{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.names label{display:flex; flex-direction:column; gap:6px; font-size:12px; color:var(--muted)}
+.names input{font:700 17px/1 var(--hand); color:var(--text); background:#14262d; border:1px solid var(--line); border-radius:10px; padding:12px; width:100%}
+.lens{display:flex; gap:8px; flex-wrap:wrap}
+.len{border:1px solid var(--line); border-radius:999px; padding:8px 14px; font-weight:500}
+.len[aria-pressed="true"]{border-color:var(--label); color:var(--label)}
+.rules{margin:0; padding-left:1.2em; color:var(--muted); font-size:13px; display:grid; gap:4px}
+.fine{font-size:12px; color:var(--muted); text-align:center}
+
+/* 比分 */
+.score{display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:10px; text-align:center}
+.score .p{font:700 15px/1.2 var(--hand)}
+.score .n{font:600 34px/1 var(--mono); color:var(--label)}
+.score .vs{color:var(--muted); font:600 12px/1 var(--mono)}
+.final{text-align:center; display:flex; flex-direction:column; gap:10px; align-items:center}
+.final h1{margin:0; font:700 30px/1.25 var(--hand); color:var(--label); text-wrap:balance}
+.list{width:100%; display:grid; gap:6px; text-align:left}
+.list div{display:flex; justify-content:space-between; gap:10px; border-bottom:1px dashed var(--line); padding:6px 2px; font-size:14px}
+.list div span:last-child{color:var(--muted); white-space:nowrap}
+
+.toast{position:fixed; left:50%; bottom:calc(20px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%);
+  background:#000c; color:#fff; padding:10px 16px; border-radius:999px; font-size:14px; opacity:0; transition:opacity .3s; pointer-events:none; max-width:90vw}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){.playing .reel,.tapme .hint{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">今晚猜歌<small>兩個人的點歌機</small></div>
+    <div class="counter" id="counter" hidden>第 <b id="qnum">01</b> / <span id="qtotal">10</span></div>
+  </div>
+
+  <!-- 開始畫面 -->
+  <section id="setup" class="panel">
+    <h2>選題庫</h2>
+    <div class="packs" id="packs">
+      <button class="pack" data-pack="zh" aria-pressed="false"><b>華語</b><span id="cnt-zh"></span></button>
+      <button class="pack" data-pack="tw" aria-pressed="false"><b>台語</b><span id="cnt-tw"></span></button>
+      <button class="pack" data-pack="mix" aria-pressed="true"><b>混著來</b><span id="cnt-mix"></span></button>
+    </div>
+    <h2>一局幾題</h2>
+    <div class="lens" id="lens">
+      <button class="len" data-n="5" aria-pressed="false">5 題</button>
+      <button class="len" data-n="10" aria-pressed="true">10 題</button>
+      <button class="len" data-n="20" aria-pressed="false">20 題</button>
+    </div>
+    <h2>誰在玩</h2>
+    <div class="names">
+      <label for="nameA">玩家一<input id="nameA" maxlength="8" value="Benson"></label>
+      <label for="nameB">玩家二<input id="nameB" maxlength="8" value="女朋友"></label>
+    </div>
+    <ul class="rules">
+      <li>每題先聽 <b>3 秒</b>，猜不到再聽 <b>6 秒</b>、<b>12 秒</b>。</li>
+      <li>先喊出歌名的人得分：3 秒內 3 分、6 秒 2 分、12 秒 1 分。</li>
+      <li>玩過的歌會記住，下次不會重複出現。</li>
+    </ul>
+    <button class="btn primary" id="startBtn">開始</button>
+    <p class="fine" id="fresh"></p>
+  </section>
+
+  <!-- 遊戲畫面 -->
+  <section id="game" hidden>
+    <div style="display:flex; flex-direction:column; gap:14px">
+      <div class="deck tapme" id="deck">
+        <div id="player"></div>
+        <div class="cover" aria-hidden="true">
+          <i class="screw a"></i><i class="screw b"></i><i class="screw c"></i><i class="screw d"></i>
+          <div class="label">
+            <div class="rule"><span id="side">A 面 · 第 1 首</span><span id="pack-tag">MIX</span></div>
+            <div class="stripe"></div>
+            <div class="window"><div class="tape"></div><div class="reel"><i></i><i></i><i></i></div><div class="reel"><i></i><i></i><i></i></div></div>
+          </div>
+          <div class="hint" id="hint">點卡帶播放 <b>3 秒</b></div>
+        </div>
+        <div class="answer" id="answer"></div>
+      </div>
+
+      <div class="steps" id="steps">
+        <div class="step on"><b>3 秒</b><span>3 分</span></div>
+        <div class="step"><b>6 秒</b><span>2 分</span></div>
+        <div class="step"><b>12 秒</b><span>1 分</span></div>
+      </div>
+
+      <div id="guessCtl" style="display:flex; flex-direction:column; gap:10px">
+        <div class="row">
+          <button class="btn primary" id="playBtn">▶ 播放 3 秒</button>
+          <button class="btn" id="moreBtn">聽久一點</button>
+        </div>
+        <button class="btn" id="revealBtn">公布答案</button>
+        <div class="row">
+          <button class="btn ghost small" id="shiftBtn">換一段</button>
+          <button class="btn ghost small" id="skipBtn">跳過這首</button>
+        </div>
+      </div>
+
+      <div id="judge" hidden style="display:flex; flex-direction:column; gap:10px">
+        <div class="q">誰先猜對？</div>
+        <div class="who">
+          <button class="btn" id="winA"><span id="lblA"></span><small id="ptsA"></small></button>
+          <button class="btn" id="winB"><span id="lblB"></span><small id="ptsB"></small></button>
+          <button class="btn ghost nobody" id="winNone">都沒猜到</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="score">
+          <div><div class="p" id="sA"></div><div class="n" id="scA">0</div></div>
+          <div class="vs">VS</div>
+          <div><div class="p" id="sB"></div><div class="n" id="scB">0</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 結算 -->
+  <section id="over" class="panel" hidden>
+    <div class="final">
+      <h1 id="verdict"></h1>
+      <div class="score" style="width:100%">
+        <div><div class="p" id="fA"></div><div class="n" id="fscA"></div></div>
+        <div class="vs">VS</div>
+        <div><div class="p" id="fB"></div><div class="n" id="fscB"></div></div>
+      </div>
+      <div class="list" id="recap"></div>
+      <div class="row" style="width:100%">
+        <button class="btn primary" id="againBtn">再來一局</button>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* [id, 歌名, 歌手, 長度秒, 題庫] */
+const SONGS = [
+  ["DYptgVvkVLQ", "晴天", "周杰倫", 319, "zh"],
+  ["Bbp9ZaJD_eA", "七里香", "周杰倫", 304, "zh"],
+  ["sHD_z90ZKV0", "稻香", "周杰倫", 224, "zh"],
+  ["bu7nU9Mhpyo", "告白氣球", "周杰倫", 216, "zh"],
+  ["Z8Mqw0b9ADs", "青花瓷", "周杰倫", 244, "zh"],
+  ["6Q0Pd53mojY", "夜曲", "周杰倫", 234, "zh"],
+  ["GtDRcXtDg-4", "突然好想你", "五月天", 287, "zh"],
+  ["R2s-H_crYkc", "倔強", "五月天", 264, "zh"],
+  ["nWb_X3ZJQjw", "溫柔", "五月天", 271, "zh"],
+  ["_o0oeyCtoFA", "知足", "五月天", 271, "zh"],
+  ["lvDa3r1pNuE", "擁抱", "五月天", 258, "zh"],
+  ["5VUUGZ1-nlY", "志明與春嬌", "五月天", 281, "zh"],
+  ["1GA8z-Wliew", "日不落", "蔡依林", 222, "zh"],
+  ["_Y_mlCbfn_Y", "說愛你", "蔡依林", 229, "zh"],
+  ["G97_rOdHcnY", "江南", "林俊傑", 264, "zh"],
+  ["LWV-f6dMN3Q", "修煉愛情", "林俊傑", 354, "zh"],
+  ["s1nlIafxVYQ", "愛很簡單", "陶喆", 261, "zh"],
+  ["P7Qv4AV_StM", "唯一", "王力宏", 261, "zh"],
+  ["J8mBwCEKRME", "大城小愛", "王力宏", 224, "zh"],
+  ["WObbdwgB41c", "遇見", "孫燕姿", 207, "zh"],
+  ["pztQtHvZkRc", "綠光", "孫燕姿", 191, "zh"],
+  ["nDchQNPuA0k", "勇氣", "梁靜茹", 359, "zh"],
+  ["MmtVl9CssYE", "寧夏", "梁靜茹", 381, "zh"],
+  ["mLk61pfiHQ0", "聽海", "張惠妹", 317, "zh"],
+  ["gr5fNKK2FaA", "Super Star", "S.H.E", 191, "zh"],
+  ["KV17QLB2BJs", "不想長大", "S.H.E", 270, "zh"],
+  ["qnDlH_S4Fak", "王妃", "蕭敬騰", 220, "zh"],
+  ["Kg-mW8SyNVg", "小幸運", "田馥甄", 289, "zh"],
+  ["mGeiABBB5f8", "泡沫", "鄧紫棋", 274, "zh"],
+  ["T4SimnaiktU", "光年之外", "鄧紫棋", 236, "zh"],
+  ["wSBXfzgqHtE", "你，好不好？", "周興哲", 289, "zh"],
+  ["6D79CYTxvOM", "愛人錯過", "告五人", 318, "zh"],
+  ["mebzXfWi87E", "曖昧", "楊丞琳", 288, "zh"],
+  ["NAODcPQcy9U", "愛你", "王心凌", 221, "zh"],
+  ["p-ehKBc9p9k", "死了都要愛", "信樂團", 277, "zh"],
+  ["mIF-nn_y2_8", "吻別", "張學友", 305, "zh"],
+  ["in8NNzwFa-s", "小情歌", "蘇打綠", 280, "zh"],
+  ["F5FlN-NBGo8", "給我一個理由忘記", "A-Lin", 287, "zh"],
+  ["VzXOT26_Da8", "身騎白馬", "徐佳瑩", 318, "zh"],
+  ["4iRupuNet3Q", "想見你想見你想見你", "八三夭", 257, "zh"],
+  ["q4aPDcZXjGg", "當", "動力火車", 292, "zh"],
+  ["3WAgjt-cDQg", "精舞門", "羅志祥", 271, "zh"],
+  ["gPpZJlE0Ca8", "挪威的森林", "伍佰", 388, "zh"],
+  ["CT-P8-D8CC0", "突然的自我", "伍佰", 217, "zh"],
+  ["nuWIJIn7wkw", "他不愛我", "莫文蔚", 233, "zh"],
+  ["bBcp_ljCBGU", "童話", "光良", 457, "zh"],
+  ["t0igPuDjYUE", "後來", "劉若英", 341, "zh"],
+  ["be2wvNFTLMc", "隱形的翅膀", "張韶涵", 227, "zh"],
+  ["wuwbok3wlGE", "不得不愛", "潘瑋柏、弦子", 288, "zh"],
+  ["fKcxM0kWqWc", "紅色高跟鞋", "蔡健雅", 207, "zh"],
+  ["wGAmgmZg-48", "最初的夢想", "范瑋琪", 296, "zh"],
+  ["GggTls8KznY", "三國戀", "Tank", 259, "zh"],
+  ["oV5wT-ps9DI", "你要的愛", "戴佩妮", 251, "zh"],
+  ["AEUmLttrY5s", "下一個天亮", "郭靜", 315, "zh"],
+  ["zPeMFCDPgKE", "愛我別走", "張震嶽", 282, "zh"],
+  ["ybfWYpYhTQQ", "魚仔", "盧廣仲", 281, "zh"],
+  ["FXg4LXsg14s", "你是我的花朵", "伍佰", 250, "tw"],
+  ["OPkqtboFFYI", "浪人情歌", "伍佰", 271, "tw"],
+  ["ObSPLQ-1fJI", "樹枝孤鳥", "伍佰", 287, "tw"],
+  ["KAntP2xs8FE", "家後", "江蕙", 251, "tw"],
+  ["Y1H22SMnS5M", "酒後的心聲", "江蕙", 260, "tw"],
+  ["WfbMmcRVy_0", "半醉半清醒", "江蕙", 255, "tw"],
+  ["qXA1U9YLkCk", "惜別的海岸", "江蕙", 222, "tw"],
+  ["xjvcCUR8_aA", "風吹的願望", "江蕙", 258, "tw"],
+  ["Jl0CAEZn9II", "傷心酒店", "江蕙、施文彬", 241, "tw"],
+  ["bZC9UeZSj_A", "金包銀", "蔡秋鳳", 211, "tw"],
+  ["nNS8eqALIFY", "船過水無痕", "蔡秋鳳", 214, "tw"],
+  ["Pf3Ecmnonik", "愛拼才會贏", "葉啟田", 223, "tw"],
+  ["69XwkAF8kbg", "歡喜就好", "陳雷", 208, "tw"],
+  ["x3bDhtuC5yk", "浪子回頭", "茄子蛋", 291, "tw"],
+  ["UocMW7BG0ls", "這款自作多情", "茄子蛋", 396, "tw"],
+  ["3Y0Ut5ozaKs", "浪流連", "茄子蛋", 375, "tw"],
+  ["riNecvPcmTE", "島嶼天光", "滅火器", 261, "tw"],
+  ["tNo3LuZXA1w", "追追追", "黃妃", 282, "tw"],
+  ["EBBw4fBZRTg", "練舞功", "謝金燕", 209, "tw"],
+  ["mTSuiGubCHE", "姐姐", "謝金燕", 199, "tw"],
+  ["4N8jQXUilas", "一支小雨傘", "洪榮宏", 211, "tw"],
+  ["IaJVmCV0ras", "一生只愛你一人", "洪榮宏", 244, "tw"],
+  ["gD14iiXq7Xw", "向前走", "林強", 360, "tw"],
+  ["iABue0GRi-g", "舞女", "陳小雲", 215, "tw"],
+  ["Xcf3ux4QSUk", "心事誰人知", "沈文程", 219, "tw"],
+  ["SetYiHxGb0o", "講什麼山盟海誓", "黃乙玲", 252, "tw"],
+  ["JvkqZrYJUe8", "嘻哈庄腳情", "玖壹壹", 241, "tw"],
+  ["bpJko9n8KTY", "不曾回來過", "李千娜", 274, "tw"]
+];
+
+const STAGES=[{sec:3,pts:3},{sec:6,pts:2},{sec:12,pts:1}];
+const $=s=>document.querySelector(s);
+const store={
+  get(k,d){try{const v=localStorage.getItem('sg_'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+  set(k,v){try{localStorage.setItem('sg_'+k,JSON.stringify(v))}catch(e){}}
+};
+let pack=store.get('pack','mix'), total=store.get('total',10);
+let names=[store.get('nameA','Benson'),store.get('nameB','女朋友')];
+let queue=[], qi=0, score=[0,0], recap=[];
+let cur=null, stage=0, startAt=0, state=-1, playToken=0, stopTimer=null, revealed=false, ytReady=false, iframe=null, listenTimer=null;
+
+function poolOf(p){return SONGS.filter(s=>p==='mix'||s[4]===p)}
+function played(){return new Set(store.get('played',[]))}
+function refreshSetup(){
+  const pl=played();
+  for(const p of ['zh','tw','mix']){
+    const all=poolOf(p), left=all.filter(s=>!pl.has(s[0])).length;
+    $('#cnt-'+p).textContent=left+' / '+all.length+' 首';
+  }
+  document.querySelectorAll('.pack').forEach(b=>b.setAttribute('aria-pressed',b.dataset.pack===pack));
+  document.querySelectorAll('.len').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.n===total));
+  $('#nameA').value=names[0]; $('#nameB').value=names[1];
+  const left=poolOf(pack).filter(s=>!pl.has(s[0])).length;
+  $('#fresh').textContent=left<total?'這個題庫快玩完了，會從頭重新洗牌。':'還沒聽過的歌有 '+left+' 首。';
+}
+document.querySelectorAll('.pack').forEach(b=>b.onclick=()=>{pack=b.dataset.pack;store.set('pack',pack);refreshSetup()});
+document.querySelectorAll('.len').forEach(b=>b.onclick=()=>{total=+b.dataset.n;store.set('total',total);refreshSetup()});
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
+function buildQueue(){
+  const pl=played(); let fresh=shuffle(poolOf(pack).filter(s=>!pl.has(s[0])));
+  if(fresh.length<total){ // 題庫用完：清掉這個題庫的紀錄重新洗
+    const ids=new Set(poolOf(pack).map(s=>s[0]));
+    store.set('played',[...pl].filter(id=>!ids.has(id)));
+    const rest=shuffle(poolOf(pack).filter(s=>!fresh.includes(s)));
+    fresh=fresh.concat(rest);
+  }
+  return fresh;
+}
+function markPlayed(id){const a=store.get('played',[]);if(!a.includes(id)){a.push(id);store.set('played',a)}}
+
+$('#startBtn').onclick=()=>{
+  names=[$('#nameA').value.trim()||'玩家一',$('#nameB').value.trim()||'玩家二'];
+  store.set('nameA',names[0]);store.set('nameB',names[1]);
+  queue=buildQueue(); qi=0; score=[0,0]; recap=[];
+  $('#setup').hidden=true; $('#over').hidden=true; $('#game').hidden=false; $('#counter').hidden=false;
+  $('#qtotal').textContent=String(total).padStart(2,'0');
+  $('#pack-tag').textContent={zh:'華語',tw:'台語',mix:'MIX'}[pack];
+  ['#sA','#lblA'].forEach(s=>$(s).textContent=names[0]); ['#sB','#lblB'].forEach(s=>$(s).textContent=names[1]);
+  paintScore(); loadSong();
+};
+
+/* ---- YouTube 播放器（用 postMessage，不另外載入外部程式） ---- */
+function cmd(func,args){ if(iframe&&iframe.contentWindow) iframe.contentWindow.postMessage(JSON.stringify({event:'command',func,args:args||[],id:1,channel:'widget'}),'*'); }
+window.addEventListener('message',e=>{
+  if(!/youtube(-nocookie)?\.com$/.test(new URL(e.origin).hostname))return;
+  let d; try{d=typeof e.data==='string'?JSON.parse(e.data):e.data}catch(_){return}
+  if(!d||!d.event)return;
+  if(d.event==='onReady'||d.event==='initialDelivery'){ytReady=true; clearInterval(listenTimer)}
+  if(d.event==='onError'){ toast('這首沒辦法在這裡播，換下一首'); setTimeout(()=>nextSong(true),900); return; }
+  let st=null, t=null;
+  if(d.event==='onStateChange') st=d.info;
+  if(d.event==='infoDelivery'&&d.info){ if('playerState' in d.info) st=d.info.playerState; if('currentTime' in d.info) t=d.info.currentTime; }
+  if(st!==null&&st!==state){ state=st; onState(); }
+  if(t!==null&&!revealed&&state===1&&t>=startAt+STAGES[stage].sec) stopClip();
+});
+function onState(){
+  const deck=$('#deck');
+  deck.classList.toggle('playing',state===1);
+  if(state===1&&!revealed){
+    deck.classList.remove('tapme');
+    $('#hint').innerHTML='播放中…';
+    clearTimeout(stopTimer);
+    const tok=++playToken;
+    stopTimer=setTimeout(()=>{if(tok===playToken)stopClip()},STAGES[stage].sec*1000+400);
+  }
+}
+function stopClip(){
+  if(revealed)return;
+  clearTimeout(stopTimer); playToken++;
+  if(state===1||state===2||state===3){ cmd('pauseVideo'); cmd('seekTo',[startAt,true]); }
+  else cmd('cueVideoById',[cur[0],startAt]); // 還沒開始播：seekTo 會直接開播，改用重新載入起點
+  readyHint();
+}
+function readyHint(){
+  $('#deck').classList.add('tapme');
+  $('#hint').innerHTML='按播放，或點卡帶';
+}
+function pickStart(len){
+  const lo=Math.max(18,len*0.2), hi=Math.max(lo+5,len*0.68-12);
+  return Math.round(lo+Math.random()*(hi-lo));
+}
+function mountPlayer(id){
+  const host=$('#player'); host.innerHTML='';
+  iframe=document.createElement('iframe');
+  const origin=location.origin&&location.origin!=='null'?'&origin='+encodeURIComponent(location.origin):'';
+  iframe.src='https://www.youtube.com/embed/'+id+'?enablejsapi=1&playsinline=1&controls=0&disablekb=1&rel=0&fs=0&iv_load_policy=3&start='+startAt+origin;
+  iframe.allow='autoplay; encrypted-media';
+  iframe.title='題目播放器';
+  ytReady=false; state=-1;
+  iframe.onload=()=>{
+    clearInterval(listenTimer);
+    const ping=()=>iframe.contentWindow&&iframe.contentWindow.postMessage(JSON.stringify({event:'listening',id:1,channel:'widget'}),'*');
+    ping(); listenTimer=setInterval(()=>{ if(ytReady)clearInterval(listenTimer); else ping(); },400);
+  };
+  host.appendChild(iframe);
+}
+function loadSong(){
+  cur=queue[qi]; stage=0; revealed=false; clearTimeout(stopTimer); playToken++;
+  startAt=pickStart(cur[3]);
+  $('#qnum').textContent=String(qi+1).padStart(2,'0');
+  $('#side').textContent=(qi<total/2?'A':'B')+' 面 · 第 '+(qi+1)+' 首';
+  $('#deck').classList.remove('revealed','playing');
+  $('#answer').innerHTML='';
+  $('#guessCtl').hidden=false; $('#judge').hidden=true;
+  paintSteps(); readyHint();
+  if(iframe&&ytReady) cmd('cueVideoById',[cur[0],startAt]); else mountPlayer(cur[0]);
+}
+function paintSteps(){
+  document.querySelectorAll('.step').forEach((el,i)=>{el.classList.toggle('on',i===stage);el.classList.toggle('done',i<stage)});
+  $('#playBtn').textContent='▶ 播放 '+STAGES[stage].sec+' 秒';
+  $('#moreBtn').disabled=stage>=STAGES.length-1;
+  $('#moreBtn').textContent=stage>=STAGES.length-1?'已經最長了':'聽 '+STAGES[stage+1].sec+' 秒';
+}
+function playClip(){
+  if(revealed)return;
+  clearTimeout(stopTimer); playToken++;
+  if(state===1||state===2||state===3) cmd('seekTo',[startAt,true]); // 播過了：拉回起點
+  cmd('playVideo'); // 還沒播過：位置本來就在起點
+  const tok=playToken;
+  setTimeout(()=>{ if(tok===playToken&&state!==1&&state!==3&&!revealed) cmd('playVideo'); },1200); // 換歌後還在載入時補按一次
+  setTimeout(()=>{ if(tok===playToken&&state!==1&&state!==3&&!revealed) toast('沒聲音的話，直接點一下卡帶畫面'); },3000);
+}
+$('#playBtn').onclick=playClip;
+$('#moreBtn').onclick=()=>{ if(stage<STAGES.length-1){stage++; paintSteps(); playClip();} };
+$('#shiftBtn').onclick=()=>{ startAt=pickStart(cur[3]); stopClip(); toast('換到歌的另一段'); };
+$('#skipBtn').onclick=()=>nextSong(true);
+$('#revealBtn').onclick=()=>{
+  revealed=true; clearTimeout(stopTimer); playToken++;
+  const deck=$('#deck'); deck.classList.add('revealed');
+  $('#answer').innerHTML='<small>'+cur[2]+'</small>'+cur[1];
+  cmd('playVideo');
+  $('#guessCtl').hidden=true; $('#judge').hidden=false;
+  $('#ptsA').textContent=$('#ptsB').textContent='+'+STAGES[stage].pts+' 分';
+};
+function award(w){
+  const pts=STAGES[stage].pts;
+  if(w>=0)score[w]+=pts;
+  recap.push({t:cur[1],a:cur[2],w,pts});
+  paintScore(); nextSong(false);
+}
+$('#winA').onclick=()=>award(0); $('#winB').onclick=()=>award(1); $('#winNone').onclick=()=>award(-1);
+function paintScore(){ $('#scA').textContent=score[0]; $('#scB').textContent=score[1]; }
+function nextSong(skipped){
+  cmd('pauseVideo'); markPlayed(cur[0]);
+  if(skipped){ queue.splice(qi,1); if(qi>=queue.length){ return finish(); } return loadSong(); }
+  qi++; if(qi>=total||qi>=queue.length) return finish(); loadSong();
+}
+function finish(){
+  $('#player').innerHTML=''; iframe=null;
+  $('#game').hidden=true; $('#over').hidden=false; $('#counter').hidden=true;
+  $('#fA').textContent=names[0]; $('#fB').textContent=names[1];
+  $('#fscA').textContent=score[0]; $('#fscB').textContent=score[1];
+  $('#verdict').textContent=score[0]===score[1]?'平手，默契滿分':(score[0]>score[1]?names[0]:names[1])+' 贏了！';
+  $('#recap').innerHTML=recap.map(r=>'<div><span>'+r.t+'・'+r.a+'</span><span>'+(r.w<0?'沒人猜到':names[r.w]+' +'+r.pts)+'</span></div>').join('');
+}
+$('#againBtn').onclick=()=>{ $('#over').hidden=true; $('#setup').hidden=false; refreshSetup(); };
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),1800)}
+refreshSetup();
+</script>
+</body>
+</html>
