@@ -1887,6 +1887,7 @@ const store={
 /* [id, 歌名, 歌手, 長度秒, 語言, 年份, 觀看數(萬)] */
 let F=Object.assign({lang:'mix',era:'all',lvl:'all'},store.get('filters',{})), total=store.get('total',10);
 let queue=[], qi=0, recap=[];
+let clipPending=false, lastTimeMsg=0, adTimer=null; // 等歌真正開始（跳過廣告）才開始倒數
 let cur=null, stage=0, startAt=0, state=-1, playToken=0, stopTimer=null, revealed=false, ytReady=false, iframe=null, listenTimer=null;
 
 const ERA={all:()=>true,'00':y=>y>=2000&&y<2010,'10':y=>y>=2010&&y<2020,'20':y=>y>=2020};
@@ -1952,22 +1953,38 @@ window.addEventListener('message',e=>{
   if(d.event==='onStateChange') st=d.info;
   if(d.event==='infoDelivery'&&d.info){ if('playerState' in d.info) st=d.info.playerState; if('currentTime' in d.info) t=d.info.currentTime; }
   if(st!==null&&st!==state){ state=st; onState(); }
-  if(t!==null&&!revealed&&state===1&&t>=startAt+STAGES[stage].sec) stopClip();
+  if(t!==null){ lastTimeMsg=Date.now(); onTime(t); }
 });
 function onState(){
   const deck=$('#deck');
   deck.classList.toggle('playing',state===1);
-  if(state===1&&!revealed){
+  if(state===1&&!revealed&&!clipPending&&!stopTimer){
+    // 開始播了，但可能是廣告：等播放位置真的從起點往前走，才開始倒數
     deck.classList.remove('tapme');
     $('#hint').innerHTML='播放中…';
-    clearTimeout(stopTimer);
-    const tok=++playToken;
-    stopTimer=setTimeout(()=>{if(tok===playToken)stopClip()},STAGES[stage].sec*1000+400);
+    clipPending=true;
+    const tok=playToken; clearTimeout(adTimer);
+    adTimer=setTimeout(()=>{
+      if(tok!==playToken||!clipPending||revealed) return;
+      if(Date.now()-lastTimeMsg>1500) startCountdown(startAt); // 拿不到播放位置：照舊直接倒數
+      else $('#hint').innerHTML='廣告中，播完會自動開始';
+    },1500);
   }
+}
+function onTime(t){
+  if(revealed||state!==1) return;
+  if(clipPending&&t>=startAt+0.2&&t<=startAt+3) startCountdown(t);
+  else if(!clipPending&&stopTimer&&t>=startAt+STAGES[stage].sec) stopClip();
+}
+function startCountdown(t){
+  clipPending=false; clearTimeout(adTimer); clearTimeout(stopTimer);
+  $('#hint').innerHTML='播放中…';
+  const tok=playToken, left=Math.max(0.5,startAt+STAGES[stage].sec-t);
+  stopTimer=setTimeout(()=>{if(tok===playToken)stopClip()},left*1000+300);
 }
 function stopClip(){
   if(revealed)return;
-  clearTimeout(stopTimer); playToken++;
+  clearTimeout(stopTimer); stopTimer=null; clipPending=false; clearTimeout(adTimer); playToken++;
   if(state===1||state===2||state===3){ cmd('pauseVideo'); cmd('seekTo',[startAt,true]); }
   else cmd('cueVideoById',[cur[0],startAt]); // 還沒開始播：seekTo 會直接開播，改用重新載入起點
   readyHint();
@@ -1996,7 +2013,7 @@ function mountPlayer(id){
   host.appendChild(iframe);
 }
 function loadSong(){
-  cur=queue[qi]; stage=0; revealed=false; clearTimeout(stopTimer); playToken++;
+  cur=queue[qi]; stage=0; revealed=false; clearTimeout(stopTimer); stopTimer=null; clipPending=false; clearTimeout(adTimer); playToken++;
   startAt=pickStart(cur[3]);
   $('#qnum').textContent=String(qi+1).padStart(2,'0');
   $('#side').textContent=(qi<total/2?'A':'B')+' 面 · 第 '+(qi+1)+' 首';
@@ -2014,7 +2031,8 @@ function paintSteps(){
 }
 function playClip(){
   if(revealed)return;
-  clearTimeout(stopTimer); playToken++;
+  clearTimeout(stopTimer); stopTimer=null; clipPending=false; clearTimeout(adTimer); playToken++;
+  if(state===1) setTimeout(onState,0); // 已在播放中（例如聽更久）：state 不會再變，手動進入等待
   if(state===1||state===2||state===3) cmd('seekTo',[startAt,true]); // 播過了：拉回起點
   cmd('playVideo'); // 還沒播過：位置本來就在起點
   const tok=playToken;
@@ -2026,7 +2044,7 @@ $('#moreBtn').onclick=()=>{ if(stage<STAGES.length-1){stage++; paintSteps(); pla
 $('#shiftBtn').onclick=()=>{ startAt=pickStart(cur[3]); stopClip(); toast('換到歌的另一段'); };
 $('#skipBtn').onclick=()=>nextSong(true);
 $('#revealBtn').onclick=()=>{
-  revealed=true; clearTimeout(stopTimer); playToken++;
+  revealed=true; clearTimeout(stopTimer); stopTimer=null; clipPending=false; clearTimeout(adTimer); playToken++;
   const deck=$('#deck'); deck.classList.add('revealed');
   $('#answer').innerHTML='<small>'+cur[2]+'</small>'+cur[1];
   cmd('playVideo');
