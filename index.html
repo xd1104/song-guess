@@ -84,6 +84,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--label); outline
   font:700 20px/1.25 var(--hand); color:#fff; pointer-events:none; opacity:0; transition:opacity .5s .2s}
 .answer small{display:block; font:500 13px/1.3 var(--sans); color:var(--label)}
 .deck.revealed .answer{opacity:1}
+/* 蓋回去要瞬間：淡入的那 0.6 秒會露出下一首的封面和歌名 */
+.deck:not(.revealed) .cover,.deck:not(.revealed) .answer{transition:none}
 
 /* 進度：幾秒 */
 .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
@@ -2017,11 +2019,14 @@ function loadSong(){
   startAt=pickStart(cur[3]);
   $('#qnum').textContent=String(qi+1).padStart(2,'0');
   $('#side').textContent=(qi<total/2?'A':'B')+' 面 · 第 '+(qi+1)+' 首';
-  $('#deck').classList.remove('revealed','playing');
+  const deck=$('#deck');
+  deck.classList.remove('revealed','playing');
   $('#answer').innerHTML='';
+  void deck.offsetWidth; // 先讓蓋子確實蓋上，再載入下一首
   $('#guessCtl').hidden=false; $('#judge').hidden=true;
   paintSteps(); readyHint();
-  if(iframe&&ytReady) cmd('cueVideoById',[cur[0],startAt]); else mountPlayer(cur[0]);
+  const id=cur[0], at=startAt;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ if(cur[0]!==id) return; if(iframe&&ytReady) cmd('cueVideoById',[id,at]); else mountPlayer(id); }));
 }
 function paintSteps(){
   document.querySelectorAll('.step').forEach((el,i)=>{el.classList.toggle('on',i===stage);el.classList.toggle('done',i<stage)});
