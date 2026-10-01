@@ -103,12 +103,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--label); outline
 .btn[disabled]{opacity:.35; cursor:default}
 .small{flex:0 0 auto; min-height:44px; font-size:14px; font-weight:500}
 
-/* 誰答對 */
-.who{display:grid; grid-template-columns:1fr 1fr; gap:10px}
-.who .btn{min-height:64px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px}
-.who .btn small{font:500 12px/1 var(--sans); color:var(--muted)}
-.who .nobody{grid-column:1/-1; min-height:46px}
-.q{font:700 17px/1.4 var(--hand); color:var(--label); text-align:center}
 
 /* 開始畫面 */
 .panel{background:#0f1f25; border:1px solid var(--line); border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:14px}
@@ -119,20 +113,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--label); outline
 .pack span{font:500 12px/1 var(--mono); color:var(--muted)}
 .pack[aria-pressed="true"]{border-color:var(--label); background:#f0d27a1a}
 .pack[aria-pressed="true"] b{color:var(--label)}
-.names{display:grid; grid-template-columns:1fr 1fr; gap:10px}
-.names label{display:flex; flex-direction:column; gap:6px; font-size:12px; color:var(--muted)}
-.names input{font:700 17px/1 var(--hand); color:var(--text); background:#14262d; border:1px solid var(--line); border-radius:10px; padding:12px; width:100%}
 .lens{display:flex; gap:8px; flex-wrap:wrap}
 .len{border:1px solid var(--line); border-radius:999px; padding:8px 14px; font-weight:500}
 .len[aria-pressed="true"]{border-color:var(--label); color:var(--label)}
 .rules{margin:0; padding-left:1.2em; color:var(--muted); font-size:13px; display:grid; gap:4px}
 .fine{font-size:12px; color:var(--muted); text-align:center}
 
-/* 比分 */
-.score{display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:10px; text-align:center}
-.score .p{font:700 15px/1.2 var(--hand)}
-.score .n{font:600 34px/1 var(--mono); color:var(--label)}
-.score .vs{color:var(--muted); font:600 12px/1 var(--mono)}
 .final{text-align:center; display:flex; flex-direction:column; gap:10px; align-items:center}
 .final h1{margin:0; font:700 30px/1.25 var(--hand); color:var(--label); text-wrap:balance}
 .list{width:100%; display:grid; gap:6px; text-align:left}
@@ -166,14 +152,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--label); outline
       <button class="len" data-n="10" aria-pressed="true">10 題</button>
       <button class="len" data-n="20" aria-pressed="false">20 題</button>
     </div>
-    <h2>誰在玩</h2>
-    <div class="names">
-      <label for="nameA">玩家一<input id="nameA" maxlength="8" value="Benson"></label>
-      <label for="nameB">玩家二<input id="nameB" maxlength="8" value="女朋友"></label>
-    </div>
     <ul class="rules">
       <li>每題先聽 <b>3 秒</b>，猜不到再聽 <b>6 秒</b>、<b>12 秒</b>。</li>
-      <li>先喊出歌名的人得分：3 秒內 3 分、6 秒 2 分、12 秒 1 分。</li>
+      <li>猜到就按「公布答案」，對一下有沒有猜對。</li>
       <li>玩過的歌會記住，下次不會重複出現。</li>
     </ul>
     <button class="btn primary" id="startBtn">開始</button>
@@ -198,9 +179,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--label); outline
       </div>
 
       <div class="steps" id="steps">
-        <div class="step on"><b>3 秒</b><span>3 分</span></div>
-        <div class="step"><b>6 秒</b><span>2 分</span></div>
-        <div class="step"><b>12 秒</b><span>1 分</span></div>
+        <div class="step on"><b>3 秒</b></div>
+        <div class="step"><b>6 秒</b></div>
+        <div class="step"><b>12 秒</b></div>
       </div>
 
       <div id="guessCtl" style="display:flex; flex-direction:column; gap:10px">
@@ -215,21 +196,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--label); outline
         </div>
       </div>
 
-      <div id="judge" hidden style="display:flex; flex-direction:column; gap:10px">
-        <div class="q">誰先猜對？</div>
-        <div class="who">
-          <button class="btn" id="winA"><span id="lblA"></span><small id="ptsA"></small></button>
-          <button class="btn" id="winB"><span id="lblB"></span><small id="ptsB"></small></button>
-          <button class="btn ghost nobody" id="winNone">都沒猜到</button>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="score">
-          <div><div class="p" id="sA"></div><div class="n" id="scA">0</div></div>
-          <div class="vs">VS</div>
-          <div><div class="p" id="sB"></div><div class="n" id="scB">0</div></div>
-        </div>
+      <div id="judge" hidden>
+        <button class="btn primary" id="nextBtn" style="width:100%">下一首</button>
       </div>
     </div>
   </section>
@@ -237,12 +205,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--label); outline
   <!-- 結算 -->
   <section id="over" class="panel" hidden>
     <div class="final">
-      <h1 id="verdict"></h1>
-      <div class="score" style="width:100%">
-        <div><div class="p" id="fA"></div><div class="n" id="fscA"></div></div>
-        <div class="vs">VS</div>
-        <div><div class="p" id="fB"></div><div class="n" id="fscB"></div></div>
-      </div>
+      <h1>這局聽了這些歌</h1>
       <div class="list" id="recap"></div>
       <div class="row" style="width:100%">
         <button class="btn primary" id="againBtn">再來一局</button>
@@ -338,18 +301,394 @@ const SONGS = [
   ["Xcf3ux4QSUk", "心事誰人知", "沈文程", 219, "tw"],
   ["SetYiHxGb0o", "講什麼山盟海誓", "黃乙玲", 252, "tw"],
   ["JvkqZrYJUe8", "嘻哈庄腳情", "玖壹壹", 241, "tw"],
-  ["bpJko9n8KTY", "不曾回來過", "李千娜", 274, "tw"]
+  ["bpJko9n8KTY", "不曾回來過", "李千娜", 274, "tw"],
+  ["Y4xCVlyCvX4", "簡單愛", "周杰倫", 270, "zh"],
+  ["RPWDeLqsN0g", "龍捲風", "周杰倫", 255, "zh"],
+  ["1hI-7vj2FhE", "安靜", "周杰倫", 332, "zh"],
+  ["H7hpK6cm-6k", "開不了口", "周杰倫", 293, "zh"],
+  ["OR-0wptI_u0", "雙截棍", "周杰倫", 205, "zh"],
+  ["qct0JLjaHDc", "東風破", "周杰倫", 314, "zh"],
+  ["9q7JOQfcJQM", "以父之名", "周杰倫", 364, "zh"],
+  ["duZDsG3tvoA", "半島鐵盒", "周杰倫", 320, "zh"],
+  ["kYhh1PpsOg4", "珊瑚海", "周杰倫", 264, "zh"],
+  ["aaM7qG2ycjk", "髮如雪", "周杰倫", 302, "zh"],
+  ["ocDo3ySyHSI", "千里之外", "周杰倫", 272, "zh"],
+  ["_B8RaLCNUZw", "聽媽媽的話", "周杰倫", 266, "zh"],
+  ["PdjbRvvJAzg", "菊花台", "周杰倫", 296, "zh"],
+  ["WxZvXPTBC0A", "彩虹", "周杰倫", 273, "zh"],
+  ["wt0RKW3aC84", "給我一首歌的時間", "周杰倫", 254, "zh"],
+  ["mLFhTFiX0uM", "說好的幸福呢", "周杰倫", 257, "zh"],
+  ["COMHDRqAvYE", "煙花易冷", "周杰倫", 267, "zh"],
+  ["kfXdP7nZIiE", "等你下課", "周杰倫", 275, "zh"],
+  ["KKsioz-zaZY", "說了再見", "周杰倫", 288, "zh"],
+  ["YJfHuATJYsQ", "擱淺", "周杰倫", 269, "zh"],
+  ["duScl5B2YDM", "不能說的秘密", "周杰倫", 287, "zh"],
+  ["VitJnr3IySc", "蒲公英的約定", "周杰倫", 248, "zh"],
+  ["mm8T-lBXQXA", "甜甜的", "周杰倫", 242, "zh"],
+  ["0-4mm0e2h44", "退後", "周杰倫", 303, "zh"],
+  ["L229QDxDakU", "一路向北", "周杰倫", 302, "zh"],
+  ["IoCoIxkGkVw", "園遊會", "周杰倫", 251, "zh"],
+  ["qzwsQTY-99o", "楓", "周杰倫", 286, "zh"],
+  ["wr-6wwt8RXk", "霍元甲", "周杰倫", 278, "zh"],
+  ["9o20U91aJdg", "牛仔很忙", "周杰倫", 169, "zh"],
+  ["qQ7g1tfEGFc", "陽光宅男", "周杰倫", 222, "zh"],
+  ["1emA1EFsPMM", "最偉大的作品", "周杰倫", 306, "zh"],
+  ["sTNJsIcPSvE", "星晴", "周杰倫", 258, "zh"],
+  ["87VUC4J_0Ps", "可愛女人", "周杰倫", 239, "zh"],
+  ["wRT-5heURhY", "黑色幽默", "周杰倫", 285, "zh"],
+  ["iSkRGgYSQfY", "戀愛ING", "五月天", 176, "zh"],
+  ["tSqNBEAZEV8", "天使", "五月天", 277, "zh"],
+  ["1j_mpwKmlJg", "憨人", "五月天", 248, "zh"],
+  ["hr8jWDyb1jg", "你不是真正的快樂", "五月天", 304, "zh"],
+  ["HxIct0i-CcA", "好好", "五月天", 226, "zh"],
+  ["Fn7NLWHJw4s", "派對動物", "五月天", 284, "zh"],
+  ["pd3eV-SG23E", "後來的我們", "五月天", 357, "zh"],
+  ["qX2GsMj7154", "乾杯", "五月天", 386, "zh"],
+  ["RTUwaCImChM", "星空", "五月天", 343, "zh"],
+  ["eZMH6Mo0f9A", "如果我們不曾相遇", "五月天", 230, "zh"],
+  ["jGqpz3stgzY", "洋蔥", "五月天", 276, "zh"],
+  ["QKkQU4lzIbc", "愛情萬歲", "五月天", 360, "zh"],
+  ["yarOcdANK50", "人生海海", "五月天", 281, "zh"],
+  ["fcYaBvBTYHs", "孫悟空", "五月天", 255, "zh"],
+  ["OyxjYPhA06U", "恆星的恆心", "五月天", 309, "zh"],
+  ["P7D3IcNZdUE", "離開地球表面", "五月天", 287, "zh"],
+  ["bwB4KYblxsY", "終結孤單", "五月天", 205, "zh"],
+  ["YKiMrg6rgYQ", "頑固", "五月天", 429, "zh"],
+  ["0EN3MnGEBXk", "舞孃", "蔡依林", 222, "zh"],
+  ["0_rNGZ9KmpY", "倒帶", "蔡依林", 265, "zh"],
+  ["xUgRjyuTzkg", "看我72變", "蔡依林", 225, "zh"],
+  ["b7rGJMEEO2Q", "布拉格廣場", "蔡依林", 236, "zh"],
+  ["cLlndV2SwX0", "美人計", "蔡依林", 220, "zh"],
+  ["bWx-vtCSg0w", "大藝術家", "蔡依林", 271, "zh"],
+  ["feOq6MWeUXA", "玫瑰少年", "蔡依林", 234, "zh"],
+  ["-wIHmPAvMBo", "怪美的", "蔡依林", 296, "zh"],
+  ["O0mewoeDlNI", "我知道你很難過", "蔡依林", 310, "zh"],
+  ["8PeZSBUnuIs", "檸檬草的味道", "蔡依林", 268, "zh"],
+  ["9cEpgttgjx4", "愛情三十六計", "蔡依林", 217, "zh"],
+  ["3J_bkgexrE8", "曹操", "林俊傑", 283, "zh"],
+  ["h-woMj_Vt0A", "小酒窩", "林俊傑", 239, "zh"],
+  ["gd38-X3HpbM", "不為誰而作的歌", "林俊傑", 313, "zh"],
+  ["uty6kyr1bwg", "可惜沒如果", "林俊傑", 313, "zh"],
+  ["iE0l8Tx62DE", "那些你很冒險的夢", "林俊傑", 253, "zh"],
+  ["m0z1XfphYzU", "一千年以後", "林俊傑", 280, "zh"],
+  ["jdf3gxFP0F8", "美人魚", "林俊傑", 250, "zh"],
+  ["7xgucJEqNDo", "背對背擁抱", "林俊傑", 243, "zh"],
+  ["BocMPQv9brE", "她說", "林俊傑", 339, "zh"],
+  ["1jF7hsQHpkE", "學不會", "林俊傑", 276, "zh"],
+  ["z9drIRdLh88", "醉赤壁", "林俊傑", 306, "zh"],
+  ["BqV7skPEcWo", "因你而在", "林俊傑", 313, "zh"],
+  ["hf8QsC6VzHo", "豆漿油條", "林俊傑", 265, "zh"],
+  ["mNQwhIx_0CM", "交換餘生", "林俊傑", 373, "zh"],
+  ["3L3Me4JXVqE", "普通朋友", "陶喆", 253, "zh"],
+  ["1xZede32V6c", "找自己", "陶喆", 306, "zh"],
+  ["dD4JHeZNvF4", "小鎮姑娘", "陶喆", 275, "zh"],
+  ["m0v78mlS-KY", "就是愛你", "陶喆", 260, "zh"],
+  ["9J_NxeC-NeE", "寂寞的季節", "陶喆", 227, "zh"],
+  ["VC4KT__tx5g", "黑色柳丁", "陶喆", 256, "zh"],
+  ["dcL7X1PjDOw", "改變自己", "王力宏", 228, "zh"],
+  ["zvUsOXNPVxo", "你不知道的事", "王力宏", 275, "zh"],
+  ["Hl654rGy48M", "落葉歸根", "王力宏", 327, "zh"],
+  ["IsgFeL5Xw4Y", "需要人陪", "王力宏", 258, "zh"],
+  ["K60TLtgGz7o", "蓋世英雄", "王力宏", 189, "zh"],
+  ["re2GblxOuHQ", "花田錯", "王力宏", 240, "zh"],
+  ["gbUD5zaKl7E", "火力全開", "王力宏", 308, "zh"],
+  ["zi8z6RPYGV0", "天黑黑", "孫燕姿", 240, "zh"],
+  ["GSx8Olkop50", "我懷念的", "孫燕姿", 295, "zh"],
+  ["oXX9HtnNgls", "開始懂了", "孫燕姿", 271, "zh"],
+  ["JCqJcK3v4q0", "逆光", "孫燕姿", 297, "zh"],
+  ["eoZEBwX6nJ4", "我也很想他", "孫燕姿", 295, "zh"],
+  ["_zMR-JJMIIE", "雨天", "孫燕姿", 262, "zh"],
+  ["a8KMIwG4usA", "風箏", "孫燕姿", 272, "zh"],
+  ["y3lP_gPjlUo", "第一天", "孫燕姿", 254, "zh"],
+  ["GDsyUtdS1YM", "我不難過", "孫燕姿", 326, "zh"],
+  ["mY_w12URh0k", "克卜勒", "孫燕姿", 251, "zh"],
+  ["cr2Hmu99hhI", "分手快樂", "梁靜茹", 277, "zh"],
+  ["RsO6zvRiGaI", "暖暖", "梁靜茹", 345, "zh"],
+  ["k_l7FVsqUyM", "可惜不是你", "梁靜茹", 288, "zh"],
+  ["dLF12O_6YiI", "會呼吸的痛", "梁靜茹", 317, "zh"],
+  ["sPCKERuXiAo", "愛你不是兩三天", "梁靜茹", 289, "zh"],
+  ["KKRqKsjqySI", "崇拜", "梁靜茹", 335, "zh"],
+  ["LwaZVMERWdQ", "絲路", "梁靜茹", 299, "zh"],
+  ["mh0uiWlr4RE", "小手拉大手", "梁靜茹", 247, "zh"],
+  ["TStnTNodCJI", "姊妹", "張惠妹", 341, "zh"],
+  ["oj3NFUBO1U8", "我可以抱你嗎", "張惠妹", 289, "zh"],
+  ["qm3wIQWnXxg", "記得", "張惠妹", 286, "zh"],
+  ["NilgON1msY8", "我要快樂", "張惠妹", 292, "zh"],
+  ["rT4FqOwn-rs", "原來你什麼都不要", "張惠妹", 283, "zh"],
+  ["ZH9k3643BH8", "剪愛", "張惠妹", 279, "zh"],
+  ["o4JrzNdpKw4", "人質", "張惠妹", 229, "zh"],
+  ["NFHb0OwmE-0", "三天三夜", "張惠妹", 265, "zh"],
+  ["xrUyk79DLbg", "如果你也聽說", "張惠妹", 311, "zh"],
+  ["jL6D7rqk4SQ", "戀人未滿", "S.H.E", 273, "zh"],
+  ["tCKGoND0pS0", "中國話", "S.H.E", 228, "zh"],
+  ["wpq30k3cYFY", "波斯貓", "S.H.E", 231, "zh"],
+  ["QDiSck_imgw", "美麗新世界", "S.H.E", 267, "zh"],
+  ["crIP7PuC8Bc", "你曾是少年", "S.H.E", 284, "zh"],
+  ["HIJL_vz_NfM", "半糖主義", "S.H.E", 218, "zh"],
+  ["M5Y9dandexU", "熱帶雨林", "S.H.E", 278, "zh"],
+  ["ETYg0wqbR_o", "星光", "S.H.E", 236, "zh"],
+  ["ZWcxk0c1Du0", "候鳥", "S.H.E", 284, "zh"],
+  ["vNR3MlBBDZo", "阿飛的小蝴蝶", "蕭敬騰", 268, "zh"],
+  ["4RVl7b0X88Y", "會痛的石頭", "蕭敬騰", 288, "zh"],
+  ["Nfo7ayzhg2Q", "怎麼說我不愛你", "蕭敬騰", 284, "zh"],
+  ["zLkVKE6sEgU", "海芋戀", "蕭敬騰", 241, "zh"],
+  ["DyFIzKYQQYE", "寂寞寂寞就好", "田馥甄", 280, "zh"],
+  ["GsKbnsUN2RE", "你就不要想起我", "田馥甄", 318, "zh"],
+  ["na_xv5iFt2Y", "魔鬼中的天使", "田馥甄", 254, "zh"],
+  ["1CcQDuuhdXA", "還是要幸福", "田馥甄", 284, "zh"],
+  ["4OqXWzekVw4", "喜歡你", "鄧紫棋", 270, "zh"],
+  ["7XlqcS6B7WA", "句號", "鄧紫棋", 244, "zh"],
+  ["D9ksLn6hZ7Q", "多遠都要在一起", "鄧紫棋", 324, "zh"],
+  ["Lhel0tzHE08", "再見", "鄧紫棋", 216, "zh"],
+  ["FWtbGkpdoP4", "來自天堂的魔鬼", "鄧紫棋", 257, "zh"],
+  ["ma7r2HGqwXs", "倒數", "鄧紫棋", 242, "zh"],
+  ["Ew4VvF0DPMc", "以後別做朋友", "周興哲", 265, "zh"],
+  ["Y2ge3KrdeWs", "怎麼了", "周興哲", 318, "zh"],
+  ["WJK8486VjfU", "永不失聯的愛", "周興哲", 280, "zh"],
+  ["gdGdO6KjF1I", "如果雨之後", "周興哲", 333, "zh"],
+  ["VpwAq7hiij0", "披星戴月的想你", "告五人", 466, "zh"],
+  ["vxucCfcMFCk", "唯一", "告五人", 272, "zh"],
+  ["caxiOmSWWEM", "好不容易", "告五人", 328, "zh"],
+  ["9PM7LgSXYbY", "給你一瓶魔法藥水", "告五人", 260, "zh"],
+  ["XKcI4jYQyPQ", "雨愛", "楊丞琳", 286, "zh"],
+  ["mJG-pud6vsc", "帶我走", "楊丞琳", 295, "zh"],
+  ["anurOHpo0aY", "年輪說", "楊丞琳", 266, "zh"],
+  ["jCXBaMWqHdg", "左邊", "楊丞琳", 276, "zh"],
+  ["6j5fLo2c9IY", "第一次愛的人", "王心凌", 245, "zh"],
+  ["FzKO6WZN5b4", "睫毛彎彎", "王心凌", 243, "zh"],
+  ["jBFaS0_NfLs", "大眠", "王心凌", 322, "zh"],
+  ["LeWRqBsm0zY", "彩虹的微笑", "王心凌", 179, "zh"],
+  ["Ib71_yverKk", "離歌", "信樂團", 270, "zh"],
+  ["4Zsd3uF4Aag", "天高地厚", "信樂團", 301, "zh"],
+  ["AkZC0QPiLe0", "假如", "信樂團", 261, "zh"],
+  ["Yl9sIjmaZP8", "一千個傷心的理由", "張學友", 274, "zh"],
+  ["VZz1e1dI3k4", "情書", "張學友", 247, "zh"],
+  ["Zs8TRQ4PTYk", "我好想你", "蘇打綠", 326, "zh"],
+  ["NA4otP-v6iI", "無與倫比的美麗", "蘇打綠", 312, "zh"],
+  ["UBRmadULoP0", "你被寫在我的歌裡", "蘇打綠", 277, "zh"],
+  ["BRcudpJzy1I", "有一種悲傷", "A-Lin", 241, "zh"],
+  ["Ie1KcGvBN_k", "失落沙洲", "徐佳瑩", 335, "zh"],
+  ["k8jAqe9QZ7I", "言不由衷", "徐佳瑩", 272, "zh"],
+  ["qt61k_dvnOw", "是日救星", "徐佳瑩", 254, "zh"],
+  ["vWPw5lJ80uE", "那就這樣吧", "動力火車", 277, "zh"],
+  ["hFJAzTqYFHc", "忠孝東路走九遍", "動力火車", 299, "zh"],
+  ["Z_GwKSC1kF8", "明天的明天的明天", "動力火車", 408, "zh"],
+  ["3bna5RHR_Pw", "戀愛達人", "羅志祥", 230, "zh"],
+  ["ycA_lU5E4wg", "一支獨秀", "羅志祥", 272, "zh"],
+  ["xuTaKiUFVb8", "愛轉角", "羅志祥", 292, "zh"],
+  ["D8WzU4w6E-U", "Last Dance", "伍佰", 271, "zh"],
+  ["lNuXbIfwXP4", "白鴿", "伍佰", 365, "zh"],
+  ["P8fqHvr82-o", "痛哭的人", "伍佰", 277, "zh"],
+  ["zzlC6ma-SYQ", "愛情的盡頭", "伍佰", 394, "zh"],
+  ["tYWufUugeUc", "陰天", "莫文蔚", 241, "zh"],
+  ["pKNMIfF4Zg0", "如果沒有你", "莫文蔚", 287, "zh"],
+  ["N2d9vPacdmw", "盛夏的果實", "莫文蔚", 264, "zh"],
+  ["YCJOsXAYlrY", "電台情歌", "莫文蔚", 245, "zh"],
+  ["rFsn1tzhcHk", "第一次", "光良", 342, "zh"],
+  ["L6tlHJ37--A", "約定", "光良", 466, "zh"],
+  ["3znMCsScCxo", "很愛很愛你", "劉若英", 279, "zh"],
+  ["ms9CcQXYj3s", "一輩子的孤單", "劉若英", 326, "zh"],
+  ["CfYG8Q3ZpMA", "我們沒有在一起", "劉若英", 290, "zh"],
+  ["dmwJaG-R1iM", "歐若拉", "張韶涵", 260, "zh"],
+  ["sh4BwEDtRI0", "遺失的美好", "張韶涵", 285, "zh"],
+  ["-4eJy_cpvoo", "寓言", "張韶涵", 245, "zh"],
+  ["WTcodZDH-Oc", "淋雨一直走", "張韶涵", 217, "zh"],
+  ["p3CBaikDft0", "快樂崇拜", "潘瑋柏、張韶涵", 222, "zh"],
+  ["JpptckJqGpo", "我的麥克風", "潘瑋柏", 222, "zh"],
+  ["8NUbWUWCjW8", "轉機", "潘瑋柏", 231, "zh"],
+  ["Z97zUBtHZGY", "達爾文", "蔡健雅", 268, "zh"],
+  ["LYpWvdGAyus", "陌生人", "蔡健雅", 267, "zh"],
+  ["cE48Lxc3iyc", "若你碰到他", "蔡健雅", 347, "zh"],
+  ["2-sqX7JiIjA", "一個像夏天一個像秋天", "范瑋琪", 249, "zh"],
+  ["FGsnxTkWZCU", "如果我變成回憶", "Tank", 315, "zh"],
+  ["WWX4OD-fge0", "怎樣", "戴佩妮", 273, "zh"],
+  ["L-YMr0cTH6s", "街角的祝福", "戴佩妮", 276, "zh"],
+  ["VhCRokYVF1I", "心牆", "郭靜", 233, "zh"],
+  ["DduKGmRCqio", "不藥而癒", "郭靜", 276, "zh"],
+  ["9ei1PUmDz98", "思念是一種病", "張震嶽", 255, "zh"],
+  ["_dsyAjwf620", "自由", "張震嶽", 282, "zh"],
+  ["_VCU94B_Oig", "再見", "張震嶽", 187, "zh"],
+  ["bJ61ijAVT4w", "我愛你", "盧廣仲", 308, "zh"],
+  ["nPcByqGfxQo", "100種生活", "盧廣仲", 302, "zh"],
+  ["m78lJuzftcc", "刻在我心底的名字", "盧廣仲", 343, "zh"],
+  ["uUMWzBqfdy4", "十年", "陳奕迅", 205, "zh"],
+  ["UsFQ9kbpQhw", "好久不見", "陳奕迅", 251, "zh"],
+  ["sR-Oyg2YSqo", "愛情轉移", "陳奕迅", 258, "zh"],
+  ["s3AmqV6VlE0", "你的背包", "陳奕迅", 239, "zh"],
+  ["URUIcYDq3_I", "陀飛輪", "陳奕迅", 288, "zh"],
+  ["Hlp8XD0R5qo", "孤勇者", "陳奕迅", 273, "zh"],
+  ["LyCun6dmCWw", "淘汰", "陳奕迅", 288, "zh"],
+  ["6lbPgfKK7m4", "朋友", "周華健", 279, "zh"],
+  ["IZ8-K3YPVN0", "花心", "周華健", 238, "zh"],
+  ["RTpuUszbW3I", "讓我歡喜讓我憂", "周華健", 280, "zh"],
+  ["O211TLekHUc", "用心良苦", "張宇", 272, "zh"],
+  ["OfpWrDHPAcA", "曲終人散", "張宇", 269, "zh"],
+  ["1YJ8wSH6HBU", "月亮惹的禍", "張宇", 259, "zh"],
+  ["ZSWeurc1yMw", "心太軟", "任賢齊", 353, "zh"],
+  ["JoLT_fN4p2g", "對面的女孩看過來", "任賢齊", 195, "zh"],
+  ["FDeRzYjRGvY", "天涯", "任賢齊", 329, "zh"],
+  ["nsHfeiGrFqo", "傷心太平洋", "任賢齊", 266, "zh"],
+  ["hQMRGsteyRc", "我是一隻魚", "任賢齊", 255, "zh"],
+  ["Xy9yr31wSQQ", "紅豆", "王菲", 260, "zh"],
+  ["xD5tBzfa-VA", "傳奇", "王菲", 292, "zh"],
+  ["VdwAkhNdZi8", "因為愛情", "陳奕迅、王菲", 225, "zh"],
+  ["4Ah5gsjXVgo", "我願意", "王菲", 268, "zh"],
+  ["04cHqPMD4So", "匆匆那年", "王菲", 249, "zh"],
+  ["rVEMTxg_LrU", "山丘", "李宗盛", 406, "zh"],
+  ["LPl420bwG8c", "愛如潮水", "張信哲", 272, "zh"],
+  ["SrD36rogSjc", "過火", "張信哲", 304, "zh"],
+  ["bsySBVNXQes", "白月光", "張信哲", 294, "zh"],
+  ["QoPxzsqGodk", "信仰", "張信哲", 253, "zh"],
+  ["OedQozXSM2U", "情非得已", "庾澄慶", 279, "zh"],
+  ["Z4E_brMSJ68", "春泥", "庾澄慶", 255, "zh"],
+  ["XSq8nZy5caQ", "讓我一次愛個夠", "庾澄慶", 261, "zh"],
+  ["g9cR2Ckz5VQ", "單身情歌", "林志炫", 278, "zh"],
+  ["mRKTOZmX2cE", "童年", "羅大佑", 233, "zh"],
+  ["GeNIpOsmEwA", "戀曲1990", "羅大佑", 313, "zh"],
+  ["gb-qTt5_vfk", "光陰的故事", "羅大佑", 202, "zh"],
+  ["ZYkxIi8H13w", "大約在冬季", "齊秦", 231, "zh"],
+  ["PF3ZeNZOBE4", "外面的世界", "齊秦", 322, "zh"],
+  ["7NIsBeVRAgk", "痴心絕對", "李聖傑", 257, "zh"],
+  ["g7xmoYFFduk", "手放開", "李聖傑", 290, "zh"],
+  ["jS7zzyoixf8", "只對你有感覺", "飛輪海", 253, "zh"],
+  ["dN_r-ySDTjA", "我難過", "5566", 285, "zh"],
+  ["pKoeIPTlTDI", "忘情水", "劉德華", 266, "zh"],
+  ["90zAJ4tFSy8", "冰雨", "劉德華", 281, "zh"],
+  ["_WfnilUdqlQ", "膽小鬼", "梁詠琪", 261, "zh"],
+  ["DOcb1-SD4Eo", "如果雲知道", "許茹芸", 323, "zh"],
+  ["hjQDnUl7Mo4", "獨角戲", "許茹芸", 274, "zh"],
+  ["jrLil3-x_9Y", "征服", "那英", 303, "zh"],
+  ["Dw-R85AcN_w", "新不了情", "萬芳", 266, "zh"],
+  ["84nE4fqFHvc", "月光愛人", "李玟", 219, "zh"],
+  ["CMFQmMVKxvY", "刀馬旦", "李玟", 192, "zh"],
+  ["C5mI0TqrJ-4", "最熟悉的陌生人", "蕭亞軒", 259, "zh"],
+  ["EHMm_ElRvMA", "愛的主打歌", "蕭亞軒", 286, "zh"],
+  ["2e1gJOE9ZEQ", "一個人的精彩", "蕭亞軒", 210, "zh"],
+  ["nlejjTDgHBg", "類似愛情", "蕭亞軒", 280, "zh"],
+  ["KUf5MMj1wKw", "突然想起你", "蕭亞軒", 237, "zh"],
+  ["V5b-kzEbwA8", "我相信", "楊培安", 246, "zh"],
+  ["DeJDWU6hYkU", "偏愛", "張芸京", 220, "zh"],
+  ["xHsSWiLsIRY", "背叛", "曹格", 318, "zh"],
+  ["-OiBFMi4CTk", "寂寞先生", "曹格", 281, "zh"],
+  ["ClL9L6btGXs", "世界唯一的你", "曹格", 283, "zh"],
+  ["qQjdsY-9y3Y", "時間煮雨", "郁可唯", 248, "zh"],
+  ["7wvNwOPprBE", "手掌心", "丁噹", 255, "zh"],
+  ["ftfJRzW0MPo", "說謊", "林宥嘉", 285, "zh"],
+  ["LTzy8NF3BDo", "浪費", "林宥嘉", 306, "zh"],
+  ["NuiAOSii_sk", "想自由", "林宥嘉", 313, "zh"],
+  ["LgvBXXLC5AI", "殘酷月光", "林宥嘉", 270, "zh"],
+  ["Mqr-kjvXsk8", "兜圈", "林宥嘉", 243, "zh"],
+  ["78NED_I0lU0", "洋蔥", "楊宗緯", 308, "zh"],
+  ["7dgyfnX-nmE", "一次就好", "楊宗緯", 299, "zh"],
+  ["8MG--WuNW1Y", "如果可以", "韋禮安", 275, "zh"],
+  ["1II_6o7uv1g", "李白", "李榮浩", 276, "zh"],
+  ["Dnj5Tcpev0Q", "年少有為", "李榮浩", 299, "zh"],
+  ["7LBUcOVmD6A", "模特", "李榮浩", 316, "zh"],
+  ["9C3Nd5dRin8", "消愁", "毛不易", 262, "zh"],
+  ["nBcYrqsv5tc", "像我這樣的人", "毛不易", 222, "zh"],
+  ["XaN3kUz4KSw", "演員", "薛之謙", 299, "zh"],
+  ["mCdi-W2R_AY", "醜八怪", "薛之謙", 243, "zh"],
+  ["N-wMiGPs4m4", "認真的雪", "薛之謙", 270, "zh"],
+  ["zsazLW9apys", "起風了", "吳青峰", 309, "zh"],
+  ["d7n1-8WHmKI", "你是我的眼", "蕭煌奇", 351, "zh"],
+  ["ZUm48lPJPLc", "他一定很愛你", "阿杜", 222, "zh"],
+  ["_a3-uuJJm0I", "北極星的眼淚", "張棟樑", 263, "zh"],
+  ["EtepxIjzY7U", "掌心", "無印良品", 267, "zh"],
+  ["oMDj9L44LZM", "你怎麼捨得我難過", "黃品源", 259, "zh"],
+  ["Vd-mTkhiThI", "約定", "周蕙", 257, "zh"],
+  ["fcLPFchVP9g", "對的人", "戴愛玲", 317, "zh"],
+  ["0ZUo_HhB564", "旅行的意義", "陳綺貞", 260, "zh"],
+  ["TsriGIW30po", "寶貝", "張懸", 147, "zh"],
+  ["rmPHuvQoh0g", "沒那麼簡單", "黃小琥", 305, "zh"],
+  ["mVp6dRUI-sY", "相見恨晚", "彭佳慧", 251, "zh"],
+  ["s5z-GXBSx-8", "親愛的你怎麼不在我身邊", "江美琪", 258, "zh"],
+  ["0ivNMQauscc", "放生", "范逸臣", 269, "zh"],
+  ["ayWNab6dQaY", "為你寫詩", "吳克群", 362, "zh"],
+  ["8l3Q6cwR0FE", "大舌頭", "吳克群", 246, "zh"],
+  ["B93376pjNzs", "黃昏", "周傳雄", 363, "zh"],
+  ["a57dX74X5gM", "寂寞沙洲冷", "周傳雄", 277, "zh"],
+  ["B2S1EngkjQk", "一場遊戲一場夢", "王傑", 262, "zh"],
+  ["RhfUGpEp9to", "領悟", "辛曉琪", 314, "zh"],
+  ["IgvDMB5fR-8", "月亮代表我的心", "鄧麗君", 209, "zh"],
+  ["5eF8oOWtsk4", "甜蜜蜜", "鄧麗君", 216, "zh"],
+  ["EYI6MlftUfo", "小城故事", "鄧麗君", 161, "zh"],
+  ["HqmpIQ9l-uA", "大風吹", "草東沒有派對", 248, "zh"],
+  ["saiJbqHBuew", "你啊你啊", "魏如萱", 467, "zh"],
+  ["pKAgFRlpUxo", "那些年", "胡夏", 372, "zh"],
+  ["_P6ZiP_t9tw", "愛你一萬年", "伍佰", 273, "zh"],
+  ["NRTVouZ3u4w", "我只在乎你", "鄧麗君", 253, "zh"],
+  ["v6mL0au2T1Q", "跟著感覺走", "蘇芮", 182, "zh"],
+  ["IKA47rEDVSs", "當愛已成往事", "林憶蓮、李宗盛", 277, "zh"],
+  ["pQlAWZLOpgo", "至少還有你", "林憶蓮", 279, "zh"],
+  ["qSnSCOMVSYQ", "聽說愛情回來過", "林憶蓮", 317, "zh"],
+  ["KA6yIAE9No4", "夜夜夜夜", "齊秦", 294, "zh"],
+  ["9HgVY4PzloQ", "落雨聲", "江蕙", 301, "tw"],
+  ["s8MKF5o6lco", "甲你攬牢牢", "江蕙", 282, "tw"],
+  ["H1RiG8eXTRE", "紅線", "江蕙", 329, "tw"],
+  ["cyhvz638Ve8", "炮仔聲", "江蕙", 297, "tw"],
+  ["IH1l_LZTwoc", "你著忍耐", "江蕙", 223, "tw"],
+  ["sxOd1BRjbh0", "博杯", "江蕙", 327, "tw"],
+  ["rB4bOK6B1Tg", "晚婚", "江蕙", 319, "tw"],
+  ["VOtZ94JT-xQ", "無言花", "江蕙", 265, "tw"],
+  ["Zg3SEaYLq5Y", "夢中的情話", "江蕙", 287, "tw"],
+  ["8gyhyKk-8GM", "苦海女神龍", "江蕙", 182, "tw"],
+  ["qdRhmacgSis", "傷心的所在", "江蕙", 236, "tw"],
+  ["jPu3u8kfxCw", "世界第一等", "伍佰", 238, "tw"],
+  ["sKwIcvv__sY", "空襲警報", "伍佰", 248, "tw"],
+  ["kEXCoQNY6Mc", "心愛的再會啦", "伍佰", 333, "tw"],
+  ["IE06OrYg_qk", "墓仔埔也敢去", "伍佰", 218, "tw"],
+  ["Zg0LnkPr6IA", "浪子的心情", "葉啟田", 224, "tw"],
+  ["6rUw_EL-6fA", "雙人枕頭", "江蕙、王識賢", 294, "tw"],
+  ["ZknnvjxUqdI", "我問天", "翁立友", 278, "tw"],
+  ["2toCBCIWEVw", "愛情恰恰", "陳小雲", 247, "tw"],
+  ["o5cKgDjA0W8", "海海人生", "陳盈潔", 265, "tw"],
+  ["v2zjxM4wtZc", "望春風", "鄧麗君", 173, "tw"],
+  ["xjC-ia-fFNc", "雨夜花", "鄧麗君", 167, "tw"],
+  ["qJv1PXpO4bY", "補破網", "洪榮宏", 263, "tw"],
+  ["KS7L2IJUOt8", "孤戀花", "江蕙", 211, "tw"],
+  ["pZrUtHVnQdM", "思慕的人", "洪一峰", 231, "tw"],
+  ["UaTG9D_5-C0", "安平追想曲", "鄧麗君", 210, "tw"],
+  ["lYChCEJYf-o", "港都夜雨", "洪榮宏", 218, "tw"],
+  ["Flfb0oNGzBg", "燒肉粽", "郭金發", 202, "tw"],
+  ["O23DdAcgxo4", "媽媽請你也保重", "文夏", 233, "tw"],
+  ["bR0aWg3d_n0", "黃昏的故鄉", "文夏", 223, "tw"],
+  ["rhMPASFEFtk", "鑼聲若響", "江蕙", 185, "tw"],
+  ["9plPMDcD4dU", "流浪到淡水", "金門王 李炳輝", 313, "tw"],
+  ["1YfKk6pe1HM", "再會吧北投", "陳明章", 253, "tw"],
+  ["0rp3pP2Xwhs", "愛情你比我想的閣較偉大", "茄子蛋", 271, "tw"],
+  ["MaJYdrJP3uw", "晚安台灣", "滅火器", 216, "tw"],
+  ["lKe0k2pF9pc", "癡情玫瑰花", "UNDER LOVER、玖壹壹春風", 283, "tw"],
+  ["Q5yKI4XaaFQ", "非常女", "黃妃", 170, "tw"],
+  ["K7nrAUimSEA", "什麼樂", "蔡秋鳳", 217, "tw"],
+  ["xqI3wiWKCgk", "阿嬤的話", "蕭煌奇", 315, "tw"],
+  ["sn9vcly8DZ4", "秋風夜雨", "江蕙", 224, "tw"],
+  ["RYRYGxF3lvY", "人生的歌", "黃乙玲", 393, "tw"],
+  ["nJvtgH0gPAs", "愛你無條件", "黃乙玲", 273, "tw"],
+  ["qn2w_2Mxmg8", "落雨的暗暝", "江蕙", 211, "tw"],
+  ["dC5I6boCs3A", "花若離枝", "江蕙", 301, "tw"],
+  ["oUotXW3Nd2k", "愛情的騙子我問你", "陳小雲", 270, "tw"],
+  ["aXOqPZdDeRE", "春風少年兄", "林強", 236, "tw"],
+  ["_URika29uXU", "下午的一齣戲", "陳明章", 260, "tw"],
+  ["TAgVVc5hAiE", "長途夜車", "滅火器", 366, "tw"],
+  ["LRcWkOu9AGM", "港邊惜別", "江蕙", 225, "tw"],
+  ["VEEsIAzHf8E", "青蚵仔嫂", "江蕙", 212, "tw"],
+  ["zVoz2KxiHMo", "六月茉莉", "鄧麗君", 187, "tw"],
+  ["k-0jFW69Cog", "桃花過渡", "江蕙、鄭進一", 368, "tw"],
+  ["pyTtmigvZPk", "心酸酸", "江蕙", 191, "tw"],
+  ["2MZ6Cqi5EcU", "秋怨", "江蕙", 208, "tw"],
+  ["dkNICZPuajk", "舊情綿綿", "洪榮宏", 241, "tw"],
+  ["dlzsbVDVEws", "情難斷夢袂醒", "陳雷、張秀卿", 259, "tw"],
+  ["_ZQNq2KeN2A", "愛到才知痛", "黃乙玲", 276, "tw"]
 ];
 
-const STAGES=[{sec:3,pts:3},{sec:6,pts:2},{sec:12,pts:1}];
+const STAGES=[{sec:3},{sec:6},{sec:12}];
 const $=s=>document.querySelector(s);
 const store={
   get(k,d){try{const v=localStorage.getItem('sg_'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},
   set(k,v){try{localStorage.setItem('sg_'+k,JSON.stringify(v))}catch(e){}}
 };
 let pack=store.get('pack','mix'), total=store.get('total',10);
-let names=[store.get('nameA','Benson'),store.get('nameB','女朋友')];
-let queue=[], qi=0, score=[0,0], recap=[];
+let queue=[], qi=0, recap=[];
 let cur=null, stage=0, startAt=0, state=-1, playToken=0, stopTimer=null, revealed=false, ytReady=false, iframe=null, listenTimer=null;
 
 function poolOf(p){return SONGS.filter(s=>p==='mix'||s[4]===p)}
@@ -358,11 +697,10 @@ function refreshSetup(){
   const pl=played();
   for(const p of ['zh','tw','mix']){
     const all=poolOf(p), left=all.filter(s=>!pl.has(s[0])).length;
-    $('#cnt-'+p).textContent=left+' / '+all.length+' 首';
+    $('#cnt-'+p).textContent=all.length+' 首';
   }
   document.querySelectorAll('.pack').forEach(b=>b.setAttribute('aria-pressed',b.dataset.pack===pack));
   document.querySelectorAll('.len').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.n===total));
-  $('#nameA').value=names[0]; $('#nameB').value=names[1];
   const left=poolOf(pack).filter(s=>!pl.has(s[0])).length;
   $('#fresh').textContent=left<total?'這個題庫快玩完了，會從頭重新洗牌。':'還沒聽過的歌有 '+left+' 首。';
 }
@@ -383,14 +721,11 @@ function buildQueue(){
 function markPlayed(id){const a=store.get('played',[]);if(!a.includes(id)){a.push(id);store.set('played',a)}}
 
 $('#startBtn').onclick=()=>{
-  names=[$('#nameA').value.trim()||'玩家一',$('#nameB').value.trim()||'玩家二'];
-  store.set('nameA',names[0]);store.set('nameB',names[1]);
-  queue=buildQueue(); qi=0; score=[0,0]; recap=[];
+  queue=buildQueue(); qi=0; recap=[];
   $('#setup').hidden=true; $('#over').hidden=true; $('#game').hidden=false; $('#counter').hidden=false;
   $('#qtotal').textContent=String(total).padStart(2,'0');
   $('#pack-tag').textContent={zh:'華語',tw:'台語',mix:'MIX'}[pack];
-  ['#sA','#lblA'].forEach(s=>$(s).textContent=names[0]); ['#sB','#lblB'].forEach(s=>$(s).textContent=names[1]);
-  paintScore(); loadSong();
+  loadSong();
 };
 
 /* ---- YouTube 播放器（用 postMessage，不另外載入外部程式） ---- */
@@ -484,16 +819,8 @@ $('#revealBtn').onclick=()=>{
   $('#answer').innerHTML='<small>'+cur[2]+'</small>'+cur[1];
   cmd('playVideo');
   $('#guessCtl').hidden=true; $('#judge').hidden=false;
-  $('#ptsA').textContent=$('#ptsB').textContent='+'+STAGES[stage].pts+' 分';
 };
-function award(w){
-  const pts=STAGES[stage].pts;
-  if(w>=0)score[w]+=pts;
-  recap.push({t:cur[1],a:cur[2],w,pts});
-  paintScore(); nextSong(false);
-}
-$('#winA').onclick=()=>award(0); $('#winB').onclick=()=>award(1); $('#winNone').onclick=()=>award(-1);
-function paintScore(){ $('#scA').textContent=score[0]; $('#scB').textContent=score[1]; }
+$('#nextBtn').onclick=()=>{ recap.push({t:cur[1],a:cur[2],sec:STAGES[stage].sec}); nextSong(false); };
 function nextSong(skipped){
   cmd('pauseVideo'); markPlayed(cur[0]);
   if(skipped){ queue.splice(qi,1); if(qi>=queue.length){ return finish(); } return loadSong(); }
@@ -502,10 +829,7 @@ function nextSong(skipped){
 function finish(){
   $('#player').innerHTML=''; iframe=null;
   $('#game').hidden=true; $('#over').hidden=false; $('#counter').hidden=true;
-  $('#fA').textContent=names[0]; $('#fB').textContent=names[1];
-  $('#fscA').textContent=score[0]; $('#fscB').textContent=score[1];
-  $('#verdict').textContent=score[0]===score[1]?'平手，默契滿分':(score[0]>score[1]?names[0]:names[1])+' 贏了！';
-  $('#recap').innerHTML=recap.map(r=>'<div><span>'+r.t+'・'+r.a+'</span><span>'+(r.w<0?'沒人猜到':names[r.w]+' +'+r.pts)+'</span></div>').join('');
+  $('#recap').innerHTML=recap.map(r=>'<div><span>'+r.t+'・'+r.a+'</span><span>聽了 '+r.sec+' 秒</span></div>').join('');
 }
 $('#againBtn').onclick=()=>{ $('#over').hidden=true; $('#setup').hidden=false; refreshSetup(); };
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),1800)}
