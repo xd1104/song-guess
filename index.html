@@ -153,8 +153,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--label); outline
 .btn.primary:not([disabled]):active{filter:brightness(1.08)}
 .pop{animation:pop .28s ease}
 @keyframes pop{40%{transform:scale(1.06)}}
-.deck{transition:transform .15s ease, box-shadow .3s}
-.deck:active{transform:scale(.985)}
+/* 卡帶不要用 transform 縮放：iPhone Safari 會把舊的提示字殘留在畫面上跟新字疊在一起 */
+.deck{transition:box-shadow .3s}
+.deck:active{box-shadow:0 18px 40px -18px #000, inset 0 0 0 2px var(--shell-edge), 0 0 0 3px #f0d27a99}
 .deck.playing{box-shadow:0 18px 40px -18px #000, inset 0 0 0 2px var(--shell-edge), 0 0 0 3px #f0d27a55}
 /* 播放鍵：播放中的樣子 */
 .btn.primary.busy{background:#22404b; color:var(--label); border-color:var(--label); animation:ring 1.2s ease-in-out infinite}
@@ -1936,8 +1937,7 @@ function dbg(d){
   else if(i!=null) line+=' '+i;
   line+='  | deck='+($('#deck').className.replace('deck','').trim()||'-')+' start='+startAt;
   if(dbgLines[0]&&dbgLines[0].slice(7)===line.slice(7)) return;
-  dbgLines.unshift(line); dbgLines=dbgLines.slice(0,40); el.textContent=dbgLines.join('
-');
+  dbgLines.unshift(line); dbgLines=dbgLines.slice(0,40); el.textContent=dbgLines.join('\n');
 }
 const $=s=>document.querySelector(s);
 const store={
@@ -2024,6 +2024,8 @@ window.addEventListener('message',e=>{
 function onState(){
   const deck=$('#deck');
   deck.classList.toggle('playing',state===1);
+  // 播放中點卡帶＝暫停：當成停止，提示改回「按播放」（不然會一直顯示播放中）
+  if(state===2&&!revealed&&(stopTimer||clipPending)){ stopClip(); return; }
   if(state===1&&!revealed&&!clipPending&&!stopTimer){
     // 開始播了，但可能是廣告：等播放位置真的從起點往前走，才開始倒數
     deck.classList.remove('tapme');
