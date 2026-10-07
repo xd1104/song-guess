@@ -241,7 +241,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--label); outline
           <div class="hint" id="hint">點卡帶播放 <b>3 秒</b></div>
         </div>
         <div class="answer" id="answer"></div>
-        <div class="adtag" id="adtag"><b>YouTube 廣告中</b>右下角出現「略過」就可以按，播完會自動開始</div>
+        <div class="adtag" id="adtag"><b>可能在播廣告</b>右下角出現「略過」就按，播完會自動開始。完全沒聲音的話，點一下卡帶</div>
       </div>
 
       <div class="steps" id="steps">
@@ -1925,6 +1925,20 @@ const SONGS = [
 ];
 
 const STAGES=[{sec:3},{sec:6},{sec:12}];
+const DEBUG=/[?&]debug/.test(location.search);
+let dbgLines=[];
+function dbg(d){
+  let el=document.getElementById('dbg');
+  if(!el){ el=document.createElement('pre'); el.id='dbg'; el.style.cssText='position:fixed;left:0;right:0;bottom:0;max-height:38vh;overflow:auto;margin:0;padding:6px 8px;background:#000e;color:#7fcf9a;font:11px/1.35 ui-monospace,Menlo,monospace;z-index:99;white-space:pre-wrap'; document.body.appendChild(el); }
+  const t=((performance.now()/1000)%1000).toFixed(1), i=d.info;
+  let line=t+' '+d.event;
+  if(i!=null&&typeof i==='object'){ const k=Object.keys(i); line+=' '+k.filter(x=>x!=='videoData'&&x!=='playlist'&&x!=='apiInterface'&&x!=='options').map(x=>{let v=i[x]; if(typeof v==='number') v=Math.round(v*100)/100; else if(typeof v==='object') v=JSON.stringify(v).slice(0,40); return x+'='+v}).join(' ').slice(0,220); }
+  else if(i!=null) line+=' '+i;
+  line+='  | deck='+($('#deck').className.replace('deck','').trim()||'-')+' start='+startAt;
+  if(dbgLines[0]&&dbgLines[0].slice(7)===line.slice(7)) return;
+  dbgLines.unshift(line); dbgLines=dbgLines.slice(0,40); el.textContent=dbgLines.join('
+');
+}
 const $=s=>document.querySelector(s);
 const store={
   get(k,d){try{const v=localStorage.getItem('sg_'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},
@@ -1998,6 +2012,7 @@ window.addEventListener('message',e=>{
   if(!/youtube(-nocookie)?\.com$/.test(new URL(e.origin).hostname))return;
   let d; try{d=typeof e.data==='string'?JSON.parse(e.data):e.data}catch(_){return}
   if(!d||!d.event)return;
+  if(DEBUG) dbg(d);
   if(d.event==='onReady'||d.event==='initialDelivery'){ytReady=true; clearInterval(listenTimer)}
   if(d.event==='onError'){ toast('這首沒辦法在這裡播，換下一首'); setTimeout(()=>nextSong(true),900); return; }
   let st=null, t=null;
@@ -2102,7 +2117,9 @@ function playClip(){
   cmd('playVideo'); // 還沒播過：位置本來就在起點
   const tok=playToken;
   setTimeout(()=>{ if(tok===playToken&&state!==1&&state!==3&&!revealed) cmd('playVideo'); },1200); // 換歌後還在載入時補按一次
-  setTimeout(()=>{ if(tok===playToken&&state!==1&&state!==3&&!revealed) toast('沒聲音的話，直接點一下卡帶畫面'); },3000);
+  // 2 秒後歌還沒真的開始：可能在播廣告（iPhone Safari 播廣告時不會回報「播放中」），也可能被瀏覽器擋住沒播
+  // ⇒ 打開右下角讓人按「略過」，並提示沒聲音就點卡帶
+  setTimeout(()=>{ if(tok===playToken&&!stopTimer&&!revealed) setAd(true); },2000);
 }
 $('#playBtn').onclick=playClip;
 $('#moreBtn').onclick=()=>{ if(stage<STAGES.length-1){stage++; paintSteps(); playClip();} };
