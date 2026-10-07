@@ -5,6 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>今晚猜歌</title>
 <meta name="theme-color" content="#14262d">
+<meta name="description" content="聽 3 秒猜歌名！華語、台語排行榜金曲 1600 多首，2000 年到現在，可選年代與難度，兩個人就能玩。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="今晚猜歌｜聽 3 秒，猜歌名">
+<meta property="og:description" content="華語、台語排行榜金曲 1600 多首，可選年代與難度，兩個人就能玩。">
+<meta property="og:url" content="https://xd1104.github.io/song-guess/">
+<meta property="og:image" content="https://xd1104.github.io/song-guess/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
@@ -135,7 +146,38 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--label); outline
 .toast{position:fixed; left:50%; bottom:calc(20px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%);
   background:#000c; color:#fff; padding:10px 16px; border-radius:999px; font-size:14px; opacity:0; transition:opacity .3s; pointer-events:none; max-width:90vw}
 .toast.show{opacity:1}
-@media (prefers-reduced-motion:reduce){.playing .reel,.tapme .hint{animation:none}}
+
+/* ---- 按下去的回饋 ---- */
+.btn,.pack,.len{transition:transform .12s ease, background-color .2s, border-color .2s, color .2s, filter .12s, opacity .2s}
+.btn:not([disabled]):active,.pack:not([disabled]):active,.len:active{transform:scale(.96); filter:brightness(1.18)}
+.btn.primary:not([disabled]):active{filter:brightness(1.08)}
+.pop{animation:pop .28s ease}
+@keyframes pop{40%{transform:scale(1.06)}}
+.deck{transition:transform .15s ease, box-shadow .3s}
+.deck:active{transform:scale(.985)}
+.deck.playing{box-shadow:0 18px 40px -18px #000, inset 0 0 0 2px var(--shell-edge), 0 0 0 3px #f0d27a55}
+/* 播放鍵：播放中的樣子 */
+.btn.primary.busy{background:#22404b; color:var(--label); border-color:var(--label); animation:ring 1.2s ease-in-out infinite}
+@keyframes ring{50%{box-shadow:0 0 0 4px #f0d27a33}}
+/* 秒數格：播放時一格一格填滿 */
+.step{position:relative; overflow:hidden; transition:border-color .2s, background-color .2s, opacity .2s}
+.step .fill{position:absolute; left:0; bottom:0; height:3px; width:0; background:var(--label)}
+/* 換畫面淡入 */
+.enter{animation:enter .3s ease both}
+@keyframes enter{from{opacity:0; transform:translateY(8px)}}
+.deck.revealed .answer{animation:enter .45s .15s ease both}
+.toast{transition:opacity .3s, transform .3s}
+.toast:not(.show){transform:translate(-50%,8px)}
+
+/* ---- 廣告：只露出右下角讓人按「略過」，其他地方照樣蓋著（廣告結束一開始播歌就蓋回去） ---- */
+.deck.ad .cover{clip-path:polygon(0 0,100% 0,100% 58%,56% 58%,56% 100%,0 100%)}
+.adtag{position:absolute; left:6%; bottom:7%; width:46%; z-index:4; pointer-events:none;
+  background:#000d; color:#fff; border-radius:10px; padding:8px 10px; font:500 12px/1.45 var(--sans); opacity:0; transition:opacity .2s}
+.adtag b{display:block; color:var(--label); font-size:13px}
+.deck.ad .adtag{opacity:1}
+.deck.ad .hint{visibility:hidden}
+
+@media (prefers-reduced-motion:reduce){.playing .reel,.tapme .hint,.btn.busy{animation:none}.pop,.enter,.deck.revealed .answer{animation:none}}
 </style>
 </head>
 <body>
@@ -178,6 +220,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--label); outline
       <li>猜到就按「公布答案」，對一下有沒有猜對。</li>
       <li>玩過的歌會記住，下次不會重複出現。</li>
       <li>難度看 YouTube 觀看數：簡單 3000 萬以上、中等 1000～3000 萬、挑戰 1000 萬以下。</li>
+      <li>歌是用 YouTube 播的，偶爾會先播廣告。有 YouTube Premium 的話，先在這個瀏覽器登入 YouTube 就不會有廣告。</li>
     </ul>
     <button class="btn primary" id="startBtn">開始</button>
     <p class="fine" id="fresh"></p>
@@ -198,12 +241,13 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--label); outline
           <div class="hint" id="hint">點卡帶播放 <b>3 秒</b></div>
         </div>
         <div class="answer" id="answer"></div>
+        <div class="adtag" id="adtag"><b>YouTube 廣告中</b>右下角出現「略過」就可以按，播完會自動開始</div>
       </div>
 
       <div class="steps" id="steps">
-        <div class="step on"><b>3 秒</b></div>
-        <div class="step"><b>6 秒</b></div>
-        <div class="step"><b>12 秒</b></div>
+        <div class="step on"><b>3 秒</b><i class="fill"></i></div>
+        <div class="step"><b>6 秒</b><i class="fill"></i></div>
+        <div class="step"><b>12 秒</b><i class="fill"></i></div>
       </div>
 
       <div id="guessCtl" style="display:flex; flex-direction:column; gap:10px">
@@ -1918,8 +1962,13 @@ function refreshSetup(){
   $('#startBtn').disabled=all===0;
   $('#fresh').textContent=all===0?'這個組合沒有歌，換個條件試試。':all<total?'這個組合只有 '+all+' 首，會全部出完。':left<total?'這個組合快玩完了，會從頭重新洗牌。':'符合條件 '+all+' 首，還沒聽過的有 '+left+' 首。';
 }
-document.querySelectorAll('.packs[data-f] .pack').forEach(b=>b.onclick=()=>{F[b.closest('.packs').dataset.f]=b.dataset.v;store.set('filters',F);refreshSetup()});
-document.querySelectorAll('.len').forEach(b=>b.onclick=()=>{total=+b.dataset.n;store.set('total',total);refreshSetup()});
+document.querySelectorAll('.packs[data-f] .pack').forEach(b=>b.onclick=()=>{F[b.closest('.packs').dataset.f]=b.dataset.v;store.set('filters',F);refreshSetup();pop(b)});
+document.querySelectorAll('.len').forEach(b=>b.onclick=()=>{total=+b.dataset.n;store.set('total',total);refreshSetup();pop(b)});
+function pop(el){el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop')}
+function enter(el){el.hidden=false;el.classList.remove('enter');void el.offsetWidth;el.classList.add('enter')}
+// iPhone 要有 touchstart 才會顯示 :active 的按下效果；Android 加一點震動
+document.addEventListener('touchstart',()=>{},{passive:true});
+document.addEventListener('click',e=>{ if(e.target.closest('button:not([disabled])')&&navigator.vibrate) try{navigator.vibrate(8)}catch(_){} });
 
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
 function buildQueue(){
@@ -1937,7 +1986,7 @@ function markPlayed(id){const a=store.get('played',[]);if(!a.includes(id)){a.pus
 $('#startBtn').onclick=()=>{
   queue=buildQueue(); qi=0; recap=[];
   if(!queue.length) return;
-  $('#setup').hidden=true; $('#over').hidden=true; $('#game').hidden=false; $('#counter').hidden=false;
+  $('#setup').hidden=true; $('#over').hidden=true; enter($('#game')); $('#counter').hidden=false;
   $('#qtotal').textContent=String(Math.min(total,queue.length)).padStart(2,'0');
   $('#pack-tag').textContent=filterTag();
   loadSong();
@@ -1969,7 +2018,7 @@ function onState(){
     adTimer=setTimeout(()=>{
       if(tok!==playToken||!clipPending||revealed) return;
       if(Date.now()-lastTimeMsg>1500) startCountdown(startAt); // 拿不到播放位置：照舊直接倒數
-      else $('#hint').innerHTML='廣告中，播完會自動開始';
+      else setAd(true);
     },1500);
   }
 }
@@ -1978,15 +2027,17 @@ function onTime(t){
   if(clipPending&&t>=startAt+0.2&&t<=startAt+3) startCountdown(t);
   else if(!clipPending&&stopTimer&&t>=startAt+STAGES[stage].sec) stopClip();
 }
+function setAd(on){ $('#deck').classList.toggle('ad',on); }
 function startCountdown(t){
-  clipPending=false; clearTimeout(adTimer); clearTimeout(stopTimer);
+  clipPending=false; clearTimeout(adTimer); clearTimeout(stopTimer); setAd(false);
   $('#hint').innerHTML='播放中…';
   const tok=playToken, left=Math.max(0.5,startAt+STAGES[stage].sec-t);
+  fillStep(left);
   stopTimer=setTimeout(()=>{if(tok===playToken)stopClip()},left*1000+300);
 }
 function stopClip(){
   if(revealed)return;
-  clearTimeout(stopTimer); stopTimer=null; clipPending=false; clearTimeout(adTimer); playToken++;
+  clearTimeout(stopTimer); stopTimer=null; clipPending=false; clearTimeout(adTimer); playToken++; setAd(false);
   if(state===1||state===2||state===3){ cmd('pauseVideo'); cmd('seekTo',[startAt,true]); }
   else cmd('cueVideoById',[cur[0],startAt]); // 還沒開始播：seekTo 會直接開播，改用重新載入起點
   readyHint();
@@ -1994,6 +2045,14 @@ function stopClip(){
 function readyHint(){
   $('#deck').classList.add('tapme');
   $('#hint').innerHTML='按播放，或點卡帶';
+  $('#playBtn').classList.remove('busy'); paintSteps(); fillStep(0);
+}
+// 目前這一格的底線跟著秒數填滿（sec=0 歸零）
+function fillStep(sec){
+  document.querySelectorAll('.step .fill').forEach((f,i)=>{
+    f.style.transition='none'; f.style.width='0';
+    if(sec&&i===stage){ void f.offsetWidth; f.style.transition='width '+sec+'s linear'; f.style.width='100%'; }
+  });
 }
 function pickStart(len){
   const lo=Math.max(18,len*0.2), hi=Math.max(lo+5,len*0.68-12);
@@ -2015,7 +2074,7 @@ function mountPlayer(id){
   host.appendChild(iframe);
 }
 function loadSong(){
-  cur=queue[qi]; stage=0; revealed=false; clearTimeout(stopTimer); stopTimer=null; clipPending=false; clearTimeout(adTimer); playToken++;
+  cur=queue[qi]; stage=0; revealed=false; clearTimeout(stopTimer); stopTimer=null; clipPending=false; clearTimeout(adTimer); playToken++; setAd(false);
   startAt=pickStart(cur[3]);
   $('#qnum').textContent=String(qi+1).padStart(2,'0');
   $('#side').textContent=(qi<total/2?'A':'B')+' 面 · 第 '+(qi+1)+' 首';
@@ -2037,6 +2096,7 @@ function paintSteps(){
 function playClip(){
   if(revealed)return;
   clearTimeout(stopTimer); stopTimer=null; clipPending=false; clearTimeout(adTimer); playToken++;
+  const pb=$('#playBtn'); pb.classList.add('busy'); pb.textContent='播放中…'; fillStep(0);
   if(state===1) setTimeout(onState,0); // 已在播放中（例如聽更久）：state 不會再變，手動進入等待
   if(state===1||state===2||state===3) cmd('seekTo',[startAt,true]); // 播過了：拉回起點
   cmd('playVideo'); // 還沒播過：位置本來就在起點
@@ -2049,11 +2109,11 @@ $('#moreBtn').onclick=()=>{ if(stage<STAGES.length-1){stage++; paintSteps(); pla
 $('#shiftBtn').onclick=()=>{ startAt=pickStart(cur[3]); stopClip(); toast('換到歌的另一段'); };
 $('#skipBtn').onclick=()=>nextSong(true);
 $('#revealBtn').onclick=()=>{
-  revealed=true; clearTimeout(stopTimer); stopTimer=null; clipPending=false; clearTimeout(adTimer); playToken++;
+  revealed=true; clearTimeout(stopTimer); stopTimer=null; clipPending=false; clearTimeout(adTimer); playToken++; setAd(false); fillStep(0);
   const deck=$('#deck'); deck.classList.add('revealed');
   $('#answer').innerHTML='<small>'+cur[2]+'</small>'+cur[1];
   cmd('playVideo');
-  $('#guessCtl').hidden=true; $('#judge').hidden=false;
+  $('#guessCtl').hidden=true; enter($('#judge'));
 };
 $('#nextBtn').onclick=()=>{ recap.push({t:cur[1],a:cur[2],sec:STAGES[stage].sec}); nextSong(false); };
 function nextSong(skipped){
@@ -2063,10 +2123,10 @@ function nextSong(skipped){
 }
 function finish(){
   $('#player').innerHTML=''; iframe=null;
-  $('#game').hidden=true; $('#over').hidden=false; $('#counter').hidden=true;
+  $('#game').hidden=true; enter($('#over')); $('#counter').hidden=true;
   $('#recap').innerHTML=recap.map(r=>'<div><span>'+r.t+'・'+r.a+'</span><span>聽了 '+r.sec+' 秒</span></div>').join('');
 }
-$('#againBtn').onclick=()=>{ $('#over').hidden=true; $('#setup').hidden=false; refreshSetup(); };
+$('#againBtn').onclick=()=>{ $('#over').hidden=true; enter($('#setup')); refreshSetup(); };
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),1800)}
 refreshSetup();
 </script>
