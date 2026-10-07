@@ -170,9 +170,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--label); outline
 .toast{transition:opacity .3s, transform .3s}
 .toast:not(.show){transform:translate(-50%,8px)}
 
-/* ---- 廣告：只露出右下角讓人按「略過」，其他地方照樣蓋著（廣告結束一開始播歌就蓋回去） ---- */
-.deck.ad .cover{clip-path:polygon(0 0,100% 0,100% 58%,56% 58%,56% 100%,0 100%)}
-.adtag{position:absolute; left:6%; bottom:7%; width:46%; z-index:4; pointer-events:none;
+/* ---- 廣告：卡帶整個蓋著（iPhone 實測：嵌入的播放器沒有「略過」，掀開一角會在廣告轉回歌時露出 MV） ---- */
+.adtag{position:absolute; left:8%; right:8%; bottom:6%; z-index:4; pointer-events:none; text-align:center;
   background:#000d; color:#fff; border-radius:10px; padding:8px 10px; font:500 12px/1.45 var(--sans); opacity:0; transition:opacity .2s}
 .adtag b{display:block; color:var(--label); font-size:13px}
 .deck.ad .adtag{opacity:1}
@@ -242,7 +241,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--label); outline
           <div class="hint" id="hint">點卡帶播放 <b>3 秒</b></div>
         </div>
         <div class="answer" id="answer"></div>
-        <div class="adtag" id="adtag"><b>YouTube 廣告中</b>右下角出現「略過」就按，播完會自動開始</div>
+        <div class="adtag" id="adtag"><b>YouTube 廣告中<span id="adsec"></span></b>播完會自動開始</div>
       </div>
 
       <div class="steps" id="steps">
@@ -2041,16 +2040,16 @@ function onState(){
   }
 }
 function onTime(t){
-  // 廣告：播放位置是廣告自己的秒數（從 0 開始），遠小於歌的起點（至少 18 秒）⇒ 馬上掀開右下角
+  // 廣告：播放位置是廣告自己的秒數（從 0 開始），遠小於歌的起點（至少 18 秒）⇒ 顯示「廣告中・已播 N 秒」
   // （iPhone Safari 播廣告時不回報「播放中」，只能靠這個認）
-  if(!revealed&&!stopTimer&&t>0&&t<startAt-2){ setAd(true); return; }
+  if(!revealed&&!stopTimer&&t>0&&t<startAt-2){ setAd(true); $('#adsec').textContent='・已播 '+Math.floor(t)+' 秒'; return; }
   // 廣告剛結束、歌從起點開始走：不管有沒有回報「播放中」都開始倒數，並蓋回去
   if(!revealed&&!stopTimer&&$('#deck').classList.contains('ad')&&t>=startAt+0.2&&t<=startAt+3){ startCountdown(t); return; }
   if(revealed||state!==1) return;
   if(clipPending&&t>=startAt+0.2&&t<=startAt+3) startCountdown(t);
   else if(!clipPending&&stopTimer&&t>=startAt+STAGES[stage].sec) stopClip();
 }
-function setAd(on){ $('#deck').classList.toggle('ad',on); }
+function setAd(on){ $('#deck').classList.toggle('ad',on); if(!on) $('#adsec').textContent=''; }
 function startCountdown(t){
   clipPending=false; clearTimeout(adTimer); clearTimeout(stopTimer); setAd(false);
   $('#hint').innerHTML='播放中…';
@@ -2127,7 +2126,7 @@ function playClip(){
   setTimeout(()=>{ if(tok===playToken&&state!==1&&state!==3&&!revealed) cmd('playVideo'); },1200); // 換歌後還在載入時補按一次
   // 2 秒後歌還沒真的開始，分兩種：
   // - 播放器還停在「已就緒、沒開始」(5)：被瀏覽器擋住自動播放 ⇒ 不掀開（會露出封面），提示點卡帶
-  // - 其他：多半在播廣告（iPhone Safari 播廣告時不會回報「播放中」）⇒ 掀開右下角讓人按「略過」
+  // - 其他：多半在播廣告（iPhone Safari 播廣告時不會回報「播放中」）⇒ 顯示「廣告中」（卡帶照樣蓋著）
   setTimeout(()=>{
     if(tok!==playToken||stopTimer||revealed) return;
     if(state===5||state===-1&&!ytStarted){ $('#hint').innerHTML='<b>點一下卡帶</b>開始播放'; $('#deck').classList.add('tapme'); $('#playBtn').classList.remove('busy'); paintSteps(); }
