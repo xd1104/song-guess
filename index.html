@@ -1946,7 +1946,7 @@ const store={
 /* [id, 歌名, 歌手, 長度秒, 語言, 年份, 觀看數(萬)] */
 let F=Object.assign({lang:'mix',era:'all',lvl:'all'},store.get('filters',{})), total=store.get('total',10);
 let queue=[], qi=0, recap=[];
-let clipPending=false, lastTimeMsg=0, adTimer=null, ytStarted=false; // 等歌真正開始（跳過廣告）才開始倒數
+let clipPending=false, lastTimeMsg=0, adTimer=null, ytStarted=false, wantPlay=false; // wantPlay：按了播放、還在等歌開始（只有這時才判斷廣告） // 等歌真正開始（跳過廣告）才開始倒數
 let cur=null, stage=0, startAt=0, state=-1, playToken=0, stopTimer=null, revealed=false, ytReady=false, iframe=null, listenTimer=null;
 
 const ERA={all:()=>true,'00':y=>y>=2000&&y<2010,'10':y=>y>=2010&&y<2020,'20':y=>y>=2020};
@@ -2042,16 +2042,16 @@ function onState(){
 function onTime(t){
   // 廣告：播放位置是廣告自己的秒數（從 0 開始），遠小於歌的起點（至少 18 秒）⇒ 顯示「廣告中・已播 N 秒」
   // （iPhone Safari 播廣告時不回報「播放中」，只能靠這個認）
-  if(!revealed&&!stopTimer&&t>0&&t<startAt-2){ setAd(true); $('#adsec').textContent='・已播 '+Math.floor(t)+' 秒'; return; }
+  if((wantPlay||clipPending)&&!revealed&&!stopTimer&&t>0&&t<startAt-2){ setAd(true); $('#adsec').textContent='・已播 '+Math.floor(t)+' 秒'; return; }
   // 廣告剛結束、歌從起點開始走：不管有沒有回報「播放中」都開始倒數，並蓋回去
-  if(!revealed&&!stopTimer&&$('#deck').classList.contains('ad')&&t>=startAt+0.2&&t<=startAt+3){ startCountdown(t); return; }
+  if((wantPlay||clipPending)&&!revealed&&!stopTimer&&$('#deck').classList.contains('ad')&&t>=startAt+0.2&&t<=startAt+3){ startCountdown(t); return; }
   if(revealed||state!==1) return;
   if(clipPending&&t>=startAt+0.2&&t<=startAt+3) startCountdown(t);
   else if(!clipPending&&stopTimer&&t>=startAt+STAGES[stage].sec) stopClip();
 }
 function setAd(on){ $('#deck').classList.toggle('ad',on); if(!on) $('#adsec').textContent=''; }
 function startCountdown(t){
-  clipPending=false; clearTimeout(adTimer); clearTimeout(stopTimer); setAd(false);
+  clipPending=false; wantPlay=false; clearTimeout(adTimer); clearTimeout(stopTimer); setAd(false);
   $('#hint').innerHTML='播放中…';
   const tok=playToken, left=Math.max(0.5,startAt+STAGES[stage].sec-t);
   fillStep(left);
@@ -2059,7 +2059,7 @@ function startCountdown(t){
 }
 function stopClip(){
   if(revealed)return;
-  clearTimeout(stopTimer); stopTimer=null; clipPending=false; clearTimeout(adTimer); playToken++; setAd(false);
+  clearTimeout(stopTimer); stopTimer=null; clipPending=false; wantPlay=false; clearTimeout(adTimer); playToken++; setAd(false);
   if(state===1||state===2||state===3){ cmd('pauseVideo'); cmd('seekTo',[startAt,true]); }
   else cmd('cueVideoById',[cur[0],startAt]); // 還沒開始播：seekTo 會直接開播，改用重新載入起點
   readyHint();
@@ -2096,7 +2096,7 @@ function mountPlayer(id){
   host.appendChild(iframe);
 }
 function loadSong(){
-  cur=queue[qi]; stage=0; revealed=false; clearTimeout(stopTimer); stopTimer=null; clipPending=false; clearTimeout(adTimer); playToken++; setAd(false);
+  cur=queue[qi]; stage=0; revealed=false; clearTimeout(stopTimer); stopTimer=null; clipPending=false; wantPlay=false; clearTimeout(adTimer); playToken++; setAd(false);
   startAt=pickStart(cur[3]);
   $('#qnum').textContent=String(qi+1).padStart(2,'0');
   $('#side').textContent=(qi<total/2?'A':'B')+' 面 · 第 '+(qi+1)+' 首';
@@ -2118,7 +2118,7 @@ function paintSteps(){
 function playClip(){
   if(revealed)return;
   clearTimeout(stopTimer); stopTimer=null; clipPending=false; clearTimeout(adTimer); playToken++;
-  const pb=$('#playBtn'); pb.classList.add('busy'); pb.textContent='播放中…'; fillStep(0);
+  const pb=$('#playBtn'); pb.classList.add('busy'); pb.textContent='播放中…'; fillStep(0); wantPlay=true;
   if(state===1) setTimeout(onState,0); // 已在播放中（例如聽更久）：state 不會再變，手動進入等待
   if(state===1||state===2||state===3) cmd('seekTo',[startAt,true]); // 播過了：拉回起點
   cmd('playVideo'); // 還沒播過：位置本來就在起點
@@ -2138,7 +2138,7 @@ $('#moreBtn').onclick=()=>{ if(stage<STAGES.length-1){stage++; paintSteps(); pla
 $('#shiftBtn').onclick=()=>{ startAt=pickStart(cur[3]); stopClip(); toast('換到歌的另一段'); };
 $('#skipBtn').onclick=()=>nextSong(true);
 $('#revealBtn').onclick=()=>{
-  revealed=true; clearTimeout(stopTimer); stopTimer=null; clipPending=false; clearTimeout(adTimer); playToken++; setAd(false); fillStep(0);
+  revealed=true; clearTimeout(stopTimer); stopTimer=null; clipPending=false; wantPlay=false; clearTimeout(adTimer); playToken++; setAd(false); fillStep(0);
   const deck=$('#deck'); deck.classList.add('revealed');
   $('#answer').innerHTML='<small>'+cur[2]+'</small>'+cur[1];
   cmd('playVideo');
