@@ -1,6 +1,12 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
+<!-- Google tag (gtag.js)：只在正式網址記錄，本機測試不算 -->
+<script>
+window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+if(location.hostname==='xd1104.github.io'){var ga=document.createElement('script');ga.async=true;ga.src='https://www.googletagmanager.com/gtag/js?id=G-RHLPMPKPB6';document.head.appendChild(ga);}
+gtag('js',new Date());gtag('config','G-RHLPMPKPB6');
+</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>今晚猜歌</title>
@@ -1988,6 +1994,11 @@ function enter(el){el.hidden=false;el.classList.remove('enter');void el.offsetWi
 document.addEventListener('touchstart',()=>{},{passive:true});
 document.addEventListener('click',e=>{ if(e.target.closest('button:not([disabled])')&&navigator.vibrate) try{navigator.vibrate(8)}catch(_){} });
 
+/* ---- 統計（Google Analytics 事件） ---- */
+function track(name,p){ try{ gtag('event',name,p||{}); }catch(e){} }
+function songInfo(){ return cur?{song:cur[1],artist:cur[2],song_lang:cur[4],song_year:cur[5],sec:STAGES[stage].sec}:{}; }
+let adTracked=false, blockTracked=false;
+
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
 function buildQueue(){
   const pl=played(), pool=poolOf(); let fresh=shuffle(pool.filter(s=>!pl.has(s[0])));
@@ -2002,6 +2013,7 @@ function buildQueue(){
 function markPlayed(id){const a=store.get('played',[]);if(!a.includes(id)){a.push(id);store.set('played',a)}}
 
 $('#startBtn').onclick=()=>{
+  track('game_start',{lang:F.lang,era:F.era,lvl:F.lvl,rounds:total,pool:poolOf().length});
   queue=buildQueue(); qi=0; recap=[];
   if(!queue.length) return;
   $('#setup').hidden=true; $('#over').hidden=true; enter($('#game')); $('#counter').hidden=false;
@@ -2018,7 +2030,7 @@ window.addEventListener('message',e=>{
   if(!d||!d.event)return;
   if(DEBUG) dbg(d);
   if(d.event==='onReady'||d.event==='initialDelivery'){ytReady=true; clearInterval(listenTimer)}
-  if(d.event==='onError'){ toast('這首沒辦法在這裡播，換下一首'); setTimeout(()=>nextSong(true),900); return; }
+  if(d.event==='onError'){ track('video_error',Object.assign(songInfo(),{video_id:cur&&cur[0],code:String(d.info)})); toast('這首沒辦法在這裡播，換下一首'); setTimeout(()=>nextSong(true),900); return; }
   let st=null, t=null;
   if(d.event==='onStateChange') st=d.info;
   if((d.event==='infoDelivery'||d.event==='initialDelivery')&&d.info){ if('playerState' in d.info) st=d.info.playerState; if('currentTime' in d.info&&d.event==='infoDelivery') t=d.info.currentTime; }
@@ -2054,7 +2066,7 @@ function onTime(t){
   if(clipPending&&t>=startAt+0.2&&t<=startAt+3) startCountdown(t);
   else if(!clipPending&&stopTimer&&t>=startAt+STAGES[stage].sec) stopClip();
 }
-function setAd(on){ $('#deck').classList.toggle('ad',on); if(!on) $('#adsec').textContent=''; }
+function setAd(on){ $('#deck').classList.toggle('ad',on); if(!on) $('#adsec').textContent=''; if(on&&!adTracked){ adTracked=true; track('ad_shown',songInfo()); } }
 function startCountdown(t){
   clipPending=false; wantPlay=false; clearTimeout(adTimer); clearTimeout(stopTimer); setAd(false);
   $('#hint').innerHTML='播放中…';
@@ -2101,7 +2113,7 @@ function mountPlayer(id){
   host.appendChild(iframe);
 }
 function loadSong(){
-  cur=queue[qi]; stage=0; revealed=false; clearTimeout(stopTimer); stopTimer=null; clipPending=false; wantPlay=false; clearTimeout(adTimer); playToken++; setAd(false);
+  cur=queue[qi]; stage=0; revealed=false; adTracked=false; blockTracked=false; clearTimeout(stopTimer); stopTimer=null; clipPending=false; wantPlay=false; clearTimeout(adTimer); playToken++; setAd(false);
   startAt=pickStart(cur[3]);
   $('#qnum').textContent=String(qi+1).padStart(2,'0');
   $('#side').textContent=(qi<total/2?'A':'B')+' 面 · 第 '+(qi+1)+' 首';
@@ -2134,15 +2146,16 @@ function playClip(){
   // - 其他：多半在播廣告（iPhone Safari 播廣告時不會回報「播放中」）⇒ 顯示「廣告中」（卡帶照樣蓋著）
   setTimeout(()=>{
     if(tok!==playToken||stopTimer||revealed) return;
-    if(state===5||state===-1&&!ytStarted){ $('#hint').innerHTML='<b>點一下卡帶</b>開始播放'; $('#deck').classList.add('tapme'); $('#playBtn').classList.remove('busy'); paintSteps(); }
+    if(state===5||state===-1&&!ytStarted){ $('#hint').innerHTML='<b>點一下卡帶</b>開始播放'; if(!blockTracked){ blockTracked=true; track('play_blocked',songInfo()); } $('#deck').classList.add('tapme'); $('#playBtn').classList.remove('busy'); paintSteps(); }
     else setAd(true);
   },2000);
 }
 $('#playBtn').onclick=playClip;
 $('#moreBtn').onclick=()=>{ if(stage<STAGES.length-1){stage++; paintSteps(); playClip();} };
-$('#shiftBtn').onclick=()=>{ startAt=pickStart(cur[3]); stopClip(); toast('換到歌的另一段'); };
-$('#skipBtn').onclick=()=>nextSong(true);
+$('#shiftBtn').onclick=()=>{ track('song_shift',songInfo()); startAt=pickStart(cur[3]); stopClip(); toast('換到歌的另一段'); };
+$('#skipBtn').onclick=()=>{ track('song_skip',songInfo()); nextSong(true); };
 $('#revealBtn').onclick=()=>{
+  track('song_reveal',songInfo());
   revealed=true; clearTimeout(stopTimer); stopTimer=null; clipPending=false; wantPlay=false; clearTimeout(adTimer); playToken++; setAd(false); fillStep(0);
   const deck=$('#deck'); deck.classList.add('revealed');
   $('#answer').innerHTML='<small>'+cur[2]+'</small>'+cur[1];
@@ -2156,11 +2169,12 @@ function nextSong(skipped){
   qi++; if(qi>=total||qi>=queue.length) return finish(); loadSong();
 }
 function finish(){
+  track('game_complete',{songs:recap.length,rounds:total});
   $('#player').innerHTML=''; iframe=null;
   $('#game').hidden=true; enter($('#over')); $('#counter').hidden=true;
   $('#recap').innerHTML=recap.map(r=>'<div><span>'+r.t+'・'+r.a+'</span><span>聽了 '+r.sec+' 秒</span></div>').join('');
 }
-$('#againBtn').onclick=()=>{ $('#over').hidden=true; enter($('#setup')); refreshSetup(); };
+$('#againBtn').onclick=()=>{ track('game_again'); $('#over').hidden=true; enter($('#setup')); refreshSetup(); };
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),1800)}
 refreshSetup();
 </script>
