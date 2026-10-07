@@ -136,6 +136,11 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--label); outline
 .len[aria-pressed="true"]{border-color:var(--label); color:var(--label)}
 .rules{margin:0; padding-left:1.2em; color:var(--muted); font-size:13px; display:grid; gap:4px}
 .fine{font-size:12px; color:var(--muted); text-align:center}
+.pool{display:flex; align-items:center; gap:14px; padding:10px 14px; border-radius:12px; background:#f0d27a10; border:1px dashed var(--line)}
+.pool-n{font:500 13px/1 var(--sans); color:var(--muted); white-space:nowrap}
+.pool-n small{display:block; font-size:11px; letter-spacing:.08em; margin-bottom:5px}
+.pool-n b{font:600 30px/1 var(--mono); color:var(--label); letter-spacing:.02em; margin-right:2px}
+.pool-t{font-size:12.5px; line-height:1.5; color:var(--muted)}
 
 .final{text-align:center; display:flex; flex-direction:column; gap:10px; align-items:center}
 .final h1{margin:0; font:700 30px/1.25 var(--hand); color:var(--label); text-wrap:balance}
@@ -191,23 +196,23 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--label); outline
   <section id="setup" class="panel">
     <h2>語言</h2>
     <div class="packs" data-f="lang">
-      <button class="pack" data-v="zh"><b>華語</b><span></span></button>
-      <button class="pack" data-v="tw"><b>台語</b><span></span></button>
-      <button class="pack" data-v="mix"><b>混著來</b><span></span></button>
+      <button class="pack" data-v="zh"><b>華語</b></button>
+      <button class="pack" data-v="tw"><b>台語</b></button>
+      <button class="pack" data-v="mix"><b>混著來</b></button>
     </div>
     <h2>年代</h2>
     <div class="packs four" data-f="era">
-      <button class="pack" data-v="all"><b>全部</b><small>不限</small><span></span></button>
-      <button class="pack" data-v="00"><b>2000</b><small>～2009</small><span></span></button>
-      <button class="pack" data-v="10"><b>2010</b><small>～2019</small><span></span></button>
-      <button class="pack" data-v="20"><b>2020</b><small>以後</small><span></span></button>
+      <button class="pack" data-v="all"><b>全部</b><small>不限</small></button>
+      <button class="pack" data-v="00"><b>2000</b><small>～2009</small></button>
+      <button class="pack" data-v="10"><b>2010</b><small>～2019</small></button>
+      <button class="pack" data-v="20"><b>2020</b><small>以後</small></button>
     </div>
     <h2>難度</h2>
     <div class="packs four" data-f="lvl">
-      <button class="pack" data-v="all"><b>全部</b><small>不限</small><span></span></button>
-      <button class="pack" data-v="easy"><b>簡單</b><small>超級金曲</small><span></span></button>
-      <button class="pack" data-v="mid"><b>中等</b><small>大熱門</small><span></span></button>
-      <button class="pack" data-v="hard"><b>挑戰</b><small>考歌庫</small><span></span></button>
+      <button class="pack" data-v="all"><b>全部</b><small>不限</small></button>
+      <button class="pack" data-v="easy"><b>簡單</b><small>超級金曲</small></button>
+      <button class="pack" data-v="mid"><b>中等</b><small>大熱門</small></button>
+      <button class="pack" data-v="hard"><b>挑戰</b><small>考歌庫</small></button>
     </div>
     <h2>一局幾題</h2>
     <div class="lens" id="lens">
@@ -222,8 +227,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--label); outline
       <li>難度看 YouTube 觀看數：簡單 3000 萬以上、中等 1000～3000 萬、挑戰 1000 萬以下。</li>
       <li>歌是用 YouTube 播的，偶爾會先播廣告。有 YouTube Premium 的話，先在這個瀏覽器登入 YouTube 就不會有廣告。</li>
     </ul>
+    <div class="pool" id="pool"><div class="pool-n"><small>可以出題</small><b id="poolN">0</b> 首</div><div class="pool-t" id="fresh"></div></div>
     <button class="btn primary" id="startBtn">開始</button>
-    <p class="fine" id="fresh"></p>
   </section>
 
   <!-- 遊戲畫面 -->
@@ -1965,7 +1970,6 @@ function refreshSetup(){
     const k=g.dataset.f;
     g.querySelectorAll('.pack').forEach(b=>{
       const n=poolOf(Object.assign({},F,{[k]:b.dataset.v})).length;
-      b.querySelector('span').textContent=n+' 首';
       b.setAttribute('aria-pressed',F[k]===b.dataset.v);
       b.disabled=n===0&&F[k]!==b.dataset.v;
     });
@@ -1973,7 +1977,8 @@ function refreshSetup(){
   document.querySelectorAll('.len').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.n===total));
   const all=poolOf().length, left=poolOf().filter(s=>!pl.has(s[0])).length;
   $('#startBtn').disabled=all===0;
-  $('#fresh').textContent=all===0?'這個組合沒有歌，換個條件試試。':all<total?'這個組合只有 '+all+' 首，會全部出完。':left<total?'這個組合快玩完了，會從頭重新洗牌。':'符合條件 '+all+' 首，還沒聽過的有 '+left+' 首。';
+  $('#poolN').textContent=all;
+  $('#fresh').innerHTML='題庫共 '+SONGS.length+' 首<br>'+(all===0?'這個組合沒有歌，換個條件試試':all<total?'這個組合只有 '+all+' 首，會全部出完':left<total?'這個組合快玩完了，會重新洗牌':'其中還沒聽過 '+left+' 首');
 }
 document.querySelectorAll('.packs[data-f] .pack').forEach(b=>b.onclick=()=>{F[b.closest('.packs').dataset.f]=b.dataset.v;store.set('filters',F);refreshSetup();pop(b)});
 document.querySelectorAll('.len').forEach(b=>b.onclick=()=>{total=+b.dataset.n;store.set('total',total);refreshSetup();pop(b)});
