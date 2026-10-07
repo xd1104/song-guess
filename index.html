@@ -2041,6 +2041,11 @@ function onState(){
   }
 }
 function onTime(t){
+  // 廣告：播放位置是廣告自己的秒數（從 0 開始），遠小於歌的起點（至少 18 秒）⇒ 馬上掀開右下角
+  // （iPhone Safari 播廣告時不回報「播放中」，只能靠這個認）
+  if(!revealed&&!stopTimer&&t>0&&t<startAt-2){ setAd(true); return; }
+  // 廣告剛結束、歌從起點開始走：不管有沒有回報「播放中」都開始倒數，並蓋回去
+  if(!revealed&&!stopTimer&&$('#deck').classList.contains('ad')&&t>=startAt+0.2&&t<=startAt+3){ startCountdown(t); return; }
   if(revealed||state!==1) return;
   if(clipPending&&t>=startAt+0.2&&t<=startAt+3) startCountdown(t);
   else if(!clipPending&&stopTimer&&t>=startAt+STAGES[stage].sec) stopClip();
